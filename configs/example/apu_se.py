@@ -438,6 +438,13 @@ parser.add_argument(
     help="Download resources to this directory",
 )
 
+parser.add_argument(
+    "--latency-path",
+    type=str,
+    default="",
+    help="Floorplan latency profile with given config filepath",
+)
+
 Ruby.define_options(parser)
 
 # add TLB options to the parser
