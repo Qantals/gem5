@@ -50,7 +50,7 @@ class ChipletTopo(SimpleTopology):
     def makeTopology(self, options, network, IntLink, ExtLink, Router):
         # wait for improvement
         num_clusters = 2
-        num_clusters_latency = 1
+        num_clusters_latency = 2
         num_routers = len(self.nodes)
 
         # default values for link latency and router latency.
@@ -84,39 +84,40 @@ class ChipletTopo(SimpleTopology):
         if latency_path:
             with open(latency_path, 'r') as file:
                 for line in file:
-                    if line.strip():
-                        link_latency.append(int(line.strip()))
+                    s = line.strip()
+                    if s:
+                        link_latency.append(list(map(int, s.split())))
             print("----------- chiplet latency info ------------")
         else:
-            link_latency = [1] * num_routers
+            link_latency = [[1 for _ in range(num_routers)] for _ in range(num_routers)]
 
         # connect clusters
         link_out_cluster = IntLink(
             link_id=link_count,
             src_node=cluster_nodes[0].router,
             dst_node=cluster_nodes[1].router,
-            latency=link_latency[0],
+            latency=link_latency[0][1],
         )
         if latency_path:
             print(
                 f"link_id: {link_count}, "
                 f"src router: {cluster_nodes[0].router.router_id}, "
                 f"dst router: {cluster_nodes[1].router.router_id}, "
-                f"latency: {link_latency[0]}"
+                f"latency: {link_latency[0][1]}"
             )
         link_count += 1
         link_in_cluster = IntLink(
             link_id=link_count,
             src_node=cluster_nodes[1].router,
             dst_node=cluster_nodes[0].router,
-            latency=link_latency[0],
+            latency=link_latency[1][0],
         )
         if latency_path:
             print(
                 f"link_id: {link_count}, "
                 f"src router: {cluster_nodes[1].router.router_id}, "
                 f"dst router: {cluster_nodes[0].router.router_id}, "
-                f"latency: {link_latency[0]}"
+                f"latency: {link_latency[1][0]}"
             )
         link_count += 1
 
@@ -162,28 +163,28 @@ class ChipletTopo(SimpleTopology):
                 link_id=link_count,
                 src_node=routers[i],
                 dst_node=cluster_nodes[target_cluster].router,
-                latency=link_latency[i + num_clusters_latency],
+                latency=link_latency[i + num_clusters_latency][target_cluster],
             )
             if latency_path:
                 print(
                     f"link_id: {link_count}, "
                     f"src router: {routers[i].router_id}, "
                     f"dst router: {cluster_nodes[target_cluster].router.router_id}, "
-                    f"latency: {link_latency[i + num_clusters_latency]}"
+                    f"latency: {link_latency[i + num_clusters_latency][target_cluster]}"
                 )
             link_count += 1
             link_in_dir = IntLink(
                 link_id=link_count,
                 src_node=cluster_nodes[target_cluster].router,
                 dst_node=routers[i],
-                latency=link_latency[i + num_clusters_latency],
+                latency=link_latency[target_cluster][i + num_clusters_latency],
             )
             if latency_path:
                 print(
                     f"link_id: {link_count}, "
                     f"src router: {cluster_nodes[target_cluster].router.router_id}, "
                     f"dst router: {routers[i].router_id}, "
-                    f"latency: {link_latency[i + num_clusters_latency]}"
+                    f"latency: {link_latency[target_cluster][i + num_clusters_latency]}"
                 )
             link_count += 1
 
