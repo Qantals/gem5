@@ -44,9 +44,9 @@ def extract_values_from_stats(stats_file_path: Path, stats_num: int) -> Tuple[fl
     return simSeconds
 
 def main():
-    ROOT_SEARCH_DIR = 'm5out_square_nogarnetFolder' 
-    OUTPUT_REPORT_FILE = os.path.join(ROOT_SEARCH_DIR, 'simSeconds_1_report.txt')
-    STATS_NUM = 1
+    ROOT_SEARCH_DIR = 'm5out_square_freqFolder' 
+    OUTPUT_REPORT_FILE = os.path.join(ROOT_SEARCH_DIR, 'simSeconds_2_report.txt')
+    STATS_NUM = 2
     # FOLDER_PATTERN = re.compile(r"m5out_freq21_latency\d{5}")
     FOLDER_PATTERN = re.compile(r"m5out_.*")
 
