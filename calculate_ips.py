@@ -7,10 +7,12 @@ from typing import Dict, List, Tuple
 def find_target_folders(root_dir: str, folder_pattern) -> List[Path]:
     
     target_folders = []
+
     # for dirpath, dirnames, filenames in os.walk(root_dir):
     #     for dirname in dirnames:
     #         if folder_pattern.fullmatch(dirname):
     #             target_folders.append(Path(dirpath) / dirname)
+
     for dirname in os.listdir(root_dir):
         if folder_pattern.fullmatch(dirname):
             target_folders.append(Path(root_dir) / dirname)
@@ -18,45 +20,35 @@ def find_target_folders(root_dir: str, folder_pattern) -> List[Path]:
     return target_folders
 
 def extract_values_from_stats(stats_file_path: Path, stats_num: int) -> Tuple[float, int]:
-    sim_seconds_list = []
-    sim_insts_list = []
+    simSeconds_list = []
     
-    pattern_sim_seconds = re.compile(r"^simSeconds\s+(\d+\.\d+)\s+#.*$")
-    pattern_sim_insts = re.compile(r"^simInsts\s+(\d+)\s+#.*$")
+    pattern_simSeconds = re.compile(r"^simSeconds\s+(\d+\.\d+)\s+#.*$")
 
     try:
         with open(stats_file_path, 'r') as f:
             for line in f:
-                match_seconds = pattern_sim_seconds.match(line)
+                match_seconds = pattern_simSeconds.match(line)
                 if match_seconds:
-                    sim_seconds_list.append(float(match_seconds.group(1)))
+                    simSeconds_list.append(float(match_seconds.group(1)))
                     # stop early if we've collected enough of both
-                    if len(sim_seconds_list) >= stats_num and len(sim_insts_list) >= stats_num:
-                        break
-
-                match_insts = pattern_sim_insts.match(line)
-                if match_insts:
-                    sim_insts_list.append(int(match_insts.group(1)))
-                    # stop early if we've collected enough of both
-                    if len(sim_seconds_list) >= stats_num and len(sim_insts_list) >= stats_num:
+                    if len(simSeconds_list) >= stats_num:
                         break
 
     except FileNotFoundError:
-        print(f"Warning: The file {stats_file_path} was not found and will be skipped.")
+        raise Exception(f"Error: The file {stats_file_path} was not found and will be skipped.")
     except Exception as e:
-        print(f"Error reading {stats_file_path}: {e}. This folder will be skipped.")
+        raise Exception(f"Error reading {stats_file_path}: {e}. This folder will be skipped.")
 
-    sim_seconds = sum(sim_seconds_list) if sim_seconds_list else None
-    sim_insts = sum(sim_insts_list) if sim_insts_list else None
+    simSeconds = sum(simSeconds_list) if simSeconds_list else None
 
-    return sim_seconds, sim_insts
+    return simSeconds
 
 def main():
-    ROOT_SEARCH_DIR = '.' 
-    OUTPUT_REPORT_FILE = 'ips_report.txt'
+    ROOT_SEARCH_DIR = 'm5out_square_nogarnetFolder' 
+    OUTPUT_REPORT_FILE = os.path.join(ROOT_SEARCH_DIR, 'simSeconds_1_report.txt')
     STATS_NUM = 1
     # FOLDER_PATTERN = re.compile(r"m5out_freq21_latency\d{5}")
-    FOLDER_PATTERN = re.compile(r"m5out_freq.*")
+    FOLDER_PATTERN = re.compile(r"m5out_.*")
 
     print(f"Starting search for target folders in: {Path(ROOT_SEARCH_DIR).resolve()}")
     
@@ -73,40 +65,36 @@ def main():
     results: List[Dict] = []
     for folder in target_folders:
         stats_file = folder / "stats.txt"
-        sim_seconds, sim_insts = extract_values_from_stats(stats_file, STATS_NUM)
+        simSeconds = extract_values_from_stats(stats_file, STATS_NUM)
         
-        if sim_seconds is not None and sim_insts is not None:
-            # Compute Instructions Per Second (IPS)
-            ips = sim_insts / sim_seconds
+        if simSeconds is not None:
             results.append({
                 'folder_name': folder.name,
-                'sim_seconds': sim_seconds,
-                'sim_insts': sim_insts,
-                'ips': ips
+                'simSeconds': simSeconds,
             })
         else:
-            print(f"Warning: Could not extract both 'simSeconds' and 'simInsts' from {stats_file}. Skipping.")
+            print(f"Warning: Could not extract 'simSeconds' from {stats_file}. Skipping.")
 
     if not results:
         print("No valid data could be processed from the found folders. Exiting.")
         return
 
-    # Step 3: Sort the results by IPS in descending order (highest first)
-    results.sort(key=lambda x: x['ips'], reverse=True)
+    # Step 3: Sort the results by simSeconds in ascending order (low first)
+    results.sort(key=lambda x: x['simSeconds'], reverse=False)
 
     # Step 4: Generate and write the report
     try:
         with open(OUTPUT_REPORT_FILE, 'w') as f:
             # Write a header
-            f.write("Gem5 Simulation IPS Report\n")
+            f.write("Gem5 Simulation simSeconds Report\n")
             f.write("=" * 40 + "\n")
-            f.write(f"{'Folder Name':<30} | {'simSeconds':<15} | {'simInsts':<20} | {'IPS':<20}\n")
+            f.write(f"{'Folder Name':<30} | {'simSeconds':<15}\n")
             f.write("-" * 90 + "\n")
 
             # Write each result
             for res in results:
                 f.write(
-                    f"{res['folder_name']:<30} | {res['sim_seconds']:<15.6f} | {res['sim_insts']:<20,} | {res['ips']:<20,.2f}\n"
+                    f"{res['folder_name']:<30} | {res['simSeconds']:<15.6f}\n"
                 )
         
         print(f"\nProcessing complete! Results have been saved to {OUTPUT_REPORT_FILE}")
