@@ -7,16 +7,19 @@ from typing import Dict, List, Tuple
 def find_target_folders(root_dir: str, folder_pattern) -> List[Path]:
     
     target_folders = []
-    for dirpath, dirnames, filenames in os.walk(root_dir):
-        for dirname in dirnames:
-            if folder_pattern.fullmatch(dirname):
-                target_folders.append(Path(dirpath) / dirname)
+    # for dirpath, dirnames, filenames in os.walk(root_dir):
+    #     for dirname in dirnames:
+    #         if folder_pattern.fullmatch(dirname):
+    #             target_folders.append(Path(dirpath) / dirname)
+    for dirname in os.listdir(root_dir):
+        if folder_pattern.fullmatch(dirname):
+            target_folders.append(Path(root_dir) / dirname)
     
     return target_folders
 
-def extract_values_from_stats(stats_file_path: Path) -> Tuple[float, int]:
-    sim_seconds = None
-    sim_insts = None
+def extract_values_from_stats(stats_file_path: Path, stats_num: int) -> Tuple[float, int]:
+    sim_seconds_list = []
+    sim_insts_list = []
     
     pattern_sim_seconds = re.compile(r"^simSeconds\s+(\d+\.\d+)\s+#.*$")
     pattern_sim_insts = re.compile(r"^simInsts\s+(\d+)\s+#.*$")
@@ -24,20 +27,18 @@ def extract_values_from_stats(stats_file_path: Path) -> Tuple[float, int]:
     try:
         with open(stats_file_path, 'r') as f:
             for line in f:
-                # line = line.strip()
-                
                 match_seconds = pattern_sim_seconds.match(line)
                 if match_seconds:
-                    sim_seconds = float(match_seconds.group(1))
-                    # If both values are found, we can break early to save time
-                    if sim_insts is not None:
+                    sim_seconds_list.append(float(match_seconds.group(1)))
+                    # stop early if we've collected enough of both
+                    if len(sim_seconds_list) >= stats_num and len(sim_insts_list) >= stats_num:
                         break
 
                 match_insts = pattern_sim_insts.match(line)
                 if match_insts:
-                    sim_insts = int(match_insts.group(1))
-                    # If both values are found, we can break early to save time
-                    if sim_seconds is not None:
+                    sim_insts_list.append(int(match_insts.group(1)))
+                    # stop early if we've collected enough of both
+                    if len(sim_seconds_list) >= stats_num and len(sim_insts_list) >= stats_num:
                         break
 
     except FileNotFoundError:
@@ -45,12 +46,17 @@ def extract_values_from_stats(stats_file_path: Path) -> Tuple[float, int]:
     except Exception as e:
         print(f"Error reading {stats_file_path}: {e}. This folder will be skipped.")
 
+    sim_seconds = sum(sim_seconds_list) if sim_seconds_list else None
+    sim_insts = sum(sim_insts_list) if sim_insts_list else None
+
     return sim_seconds, sim_insts
 
 def main():
     ROOT_SEARCH_DIR = '.' 
     OUTPUT_REPORT_FILE = 'ips_report.txt'
-    FOLDER_PATTERN = re.compile(r"m5out_freq12_latency\d{5}")
+    STATS_NUM = 1
+    # FOLDER_PATTERN = re.compile(r"m5out_freq21_latency\d{5}")
+    FOLDER_PATTERN = re.compile(r"m5out_freq.*")
 
     print(f"Starting search for target folders in: {Path(ROOT_SEARCH_DIR).resolve()}")
     
@@ -67,7 +73,7 @@ def main():
     results: List[Dict] = []
     for folder in target_folders:
         stats_file = folder / "stats.txt"
-        sim_seconds, sim_insts = extract_values_from_stats(stats_file)
+        sim_seconds, sim_insts = extract_values_from_stats(stats_file, STATS_NUM)
         
         if sim_seconds is not None and sim_insts is not None:
             # Compute Instructions Per Second (IPS)
