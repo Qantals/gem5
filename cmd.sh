@@ -4,7 +4,7 @@
 # ./build/VEGA_X86/gem5.opt configs/example/apu_se.py -n 3 --gpu --gfx-version=gfx900 -c gem5-resources/src/gpu/square/bin/square
 
 # my config
-OUTPUT_DIR=m5out_freq12_latency15111
+OUTPUT_DIR=m5out_square_freqFolder/m5out_freq1.2.2
 mkdir -p "$OUTPUT_DIR"
 cp latency.txt "$OUTPUT_DIR"
 
@@ -15,7 +15,7 @@ configs/example/apu_se.py \
 --latency-path latency.txt \
 --sys-clock 1GHz \
 --CPUClock 2000MHz \
---gpu-clock 1000MHz \
+--gpu-clock 2000MHz \
 --network garnet \
 --mem-channels 4 \
 --mem-size 512MB \
