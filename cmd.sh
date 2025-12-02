@@ -1,18 +1,18 @@
 # test clock
-OUTPUT_DIR=m5out_freq2.2
+OUTPUT_DIR=m5out_simple_ruby/1.2
 mkdir -p "$OUTPUT_DIR"
 
 ./build/X86/gem5.fast \
 -d "$OUTPUT_DIR" \
 configs/deprecated/example/se.py \
---sys-clock 2GHz \
+--sys-clock 1GHz \
 --cpu-clock 2000MHz \
+--cpu-type TimingSimpleCPU \
+--ruby \
 -c gem5-resources/src/examples/matrix-multiply/matrix-multiply \
 > "${OUTPUT_DIR}/print.log" 2>&1 &
 
-# --cpu-type TimingSimpleCPU \
 # -n 4 \
-# --ruby \
 # --network garnet \
 # --mem-channels 4 \
 # --mem-size 512MB \
