@@ -11,3 +11,19 @@
     - L2 and dir use ruby clock domain
     - network use ruby clock domain
         - routers use ruby clock domain
+
+# stats.txt from apu_se.py
+```
+system.cpu4.CUs0.instCyclesVALU                 61792                       # Number of cycles needed to execute VALU insts. (Unspecified)
+system.cpu4.CUs0.instCyclesVMemPerSimd::0         2898                       # Number of cycles to send address, command, data from VRF to vector memory unit, per SIMD (Unspecified)
+system.cpu4.CUs0.execRateDist::max_value         9474                       # Instruction Execution Rate: Number of executed vector instructions per cycle (Unspecified)
+
+system.cpu4.CUs0.numInstrExecuted               91920                       # number of instructions executed (Unspecified)
+system.cpu4.CUs0.totalCycles                  1125862                       # number of cycles the CU ran for (Unspecified)
+system.cpu4.CUs0.ipc                         0.081644                       # Instructions per cycle (this CU only) (Unspecified)
+
+system.cpu4.CUs0.ExecStage.numCyclesWithNoIssue      1049787                       # number of cycles the CU issues nothing (Unspecified)
+system.cpu4.CUs0.ExecStage.numCyclesWithInstrIssued        76075                       # number of cycles the CU issued at least one instruction (Unspecified)
+```
+
+Decision: run latest GPU FS and changes frequency to check. Because origin `apu_se.py` meets problem for frequency.
