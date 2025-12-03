@@ -12,7 +12,17 @@
     - network use ruby clock domain
         - routers use ruby clock domain
 
-# stats.txt from apu_se.py
+
+# apu_se.py
+Decision: run latest GPU FS and changes frequency to check. Because origin `apu_se.py` meets problem for frequency.
+- Noticed that keep CPU and GPU frequency, system speed doubles as ruby clock doubles when ruby clock approximately < 3GHz (at least valid for 1GHz and 2GHz, not so valid for 4GHz)
+    - CPU - ruby clock ration follow this in CPI (both 1st statistics and 2nd statistics)
+    - GPU - ruby clock ration follow this? No, see `freq4.4.1`, `freq2.2.1` `freq1.1.1`, `freq4.4.2` where `freq4.4.2` behaves strangely
+        - more strange is `freq1.1.1` and `freq2.2.2`
+
+
+## stats.txt from apu_se.py
+GPU
 ```
 system.cpu4.CUs0.instCyclesVALU                 61792                       # Number of cycles needed to execute VALU insts. (Unspecified)
 system.cpu4.CUs0.instCyclesVMemPerSimd::0         2898                       # Number of cycles to send address, command, data from VRF to vector memory unit, per SIMD (Unspecified)
@@ -24,6 +34,17 @@ system.cpu4.CUs0.ipc                         0.081644                       # In
 
 system.cpu4.CUs0.ExecStage.numCyclesWithNoIssue      1049787                       # number of cycles the CU issues nothing (Unspecified)
 system.cpu4.CUs0.ExecStage.numCyclesWithInstrIssued        76075                       # number of cycles the CU issued at least one instruction (Unspecified)
+
+system.l1_coalescer0.queuingCycles        14999648000                       # Number of cycles spent in queue (Unspecified)
+system.l1_tlb0.accessCycles                 126786944                       # Cycles spent accessing this TLB level (Unspecified)
 ```
 
-Decision: run latest GPU FS and changes frequency to check. Because origin `apu_se.py` meets problem for frequency.
+CPU
+```
+useless: -- system.cpu0.exec_context.thread_0.notIdleFraction     0.972897                       # Percentage of non-idle cycles (Ratio)
+```
+
+Ruby
+```
+system.ruby.network.ext_links0.int_node.throttle00.total_stall_cy            0                       # Total time spent blocked on any output link (Cycle)
+```
