@@ -326,11 +326,11 @@ class TCCCntrl(GPU_VIPER_TCC_Controller, CntrlBase):
         self.L2cache.resourceStalls = options.no_tcc_resource_stalls
 
         self.ruby_system = ruby_system
-        if hasattr(options, "gpu_clock") and hasattr(options, "gpu_voltage"):
-            self.clk_domain = SrcClockDomain(
-                clock=options.gpu_clock,
-                voltage_domain=VoltageDomain(voltage=options.gpu_voltage),
-            )
+        # if hasattr(options, "gpu_clock") and hasattr(options, "gpu_voltage"):
+        #     self.clk_domain = SrcClockDomain(
+        #         clock=options.gpu_clock,
+        #         voltage_domain=VoltageDomain(voltage=options.gpu_voltage),
+        #     )
 
         if options.recycle_latency:
             self.recycle_latency = options.recycle_latency
