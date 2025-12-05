@@ -15,10 +15,11 @@
 
 # apu_se.py
 Decision: run latest GPU FS and changes frequency to check. Because origin `apu_se.py` meets problem for frequency.
-- Noticed that keep CPU and GPU frequency, system speed doubles as ruby clock doubles when ruby clock approximately < 3GHz (at least valid for 1GHz and 2GHz, not so valid for 4GHz)
-    - CPU - ruby clock ration follow this in CPI (both 1st statistics and 2nd statistics)
-    - GPU - ruby clock ration follow this? No, see `freq4.4.1`, `freq2.2.1` `freq1.1.1`, `freq4.4.2` where `freq4.4.2` behaves strangely
-        - more strange is `freq1.1.1` and `freq2.2.2`
+
+Finding:
+1. IPC_CPU: depends solely on ration freq_CPU : freq_Ruby
+2. simSeconds: depends solely on freq_Ruby
+3. IPC_GPU: solely more freq_Ruby, solely less freq_GPU is better
 
 
 ## stats.txt from apu_se.py
@@ -46,5 +47,8 @@ useless: -- system.cpu0.exec_context.thread_0.notIdleFraction     0.972897      
 
 Ruby
 ```
-system.ruby.network.ext_links0.int_node.throttle00.total_stall_cy            0                       # Total time spent blocked on any output link (Cycle)
+useless: -- system.ruby.network.ext_links0.int_node.throttle00.total_stall_cy            0                       # Total time spent blocked on any output link (Cycle)
 ```
+
+# protentional issue apu_se.py
+system.ruby.cp_cntrl0.sequencer.clk_domain is ruby.clk_domain, not cpu.domain?

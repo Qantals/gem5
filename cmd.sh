@@ -28,7 +28,7 @@
 
 
 # apu_se.py
-OUTPUT_DIR=m5out_square_originTopo/nomemcfg/freq1.2.2
+OUTPUT_DIR=m5out_square_originTopo/nomemcfg_cpClk/freq1.1.2
 mkdir -p "$OUTPUT_DIR"
 # cp latency.txt "$OUTPUT_DIR"
 
@@ -37,7 +37,7 @@ mkdir -p "$OUTPUT_DIR"
 configs/example/apu_se.py \
 -n 4 \
 --CPUClock 1000MHz \
---gpu-clock 2000MHz \
+--gpu-clock 1000MHz \
 --ruby-clock 2GHz \
 -c gem5-resources/src/gpu/square/bin/square \
 > "${OUTPUT_DIR}/print.log" 2>&1 &

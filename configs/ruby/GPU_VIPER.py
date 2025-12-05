@@ -133,6 +133,11 @@ class CPCntrl(GPU_VIPER_CorePair_Controller, CntrlBase):
         self.send_evictions = True if options.cpu_type == "X86O3CPU" else False
 
         self.ruby_system = ruby_system
+        if hasattr(options, "CPUClock") and hasattr(options, "cpu_voltage"):
+            self.clk_domain = SrcClockDomain(
+                clock=options.CPUClock,
+                voltage_domain=VoltageDomain(voltage=options.cpu_voltage),
+            )
 
         if options.recycle_latency:
             self.recycle_latency = options.recycle_latency
@@ -969,11 +974,11 @@ def create_system(
     if hasattr(options, "bw_scalor") and options.bw_scalor > 0:
         # Assuming a 2GHz clock
         crossbar_bw = 16 * options.num_compute_units * options.bw_scalor
-        mainChipletTopo = ChipletTopo(intBW=crossbar_bw)
+        mainChipletTopo = Cluster(intBW=crossbar_bw)
         cpuCluster = Cluster(extBW=crossbar_bw, intBW=crossbar_bw)
         gpuCluster = Cluster(extBW=crossbar_bw, intBW=crossbar_bw)
     else:
-        mainChipletTopo = ChipletTopo(intBW=8)  # 16 GB/s
+        mainChipletTopo = Cluster(intBW=8)  # 16 GB/s
         cpuCluster = Cluster(extBW=8, intBW=8)  # 16 GB/s
         gpuCluster = Cluster(extBW=8, intBW=8)  # 16 GB/s
 
