@@ -25,6 +25,8 @@ Finding:
 ## stats.txt from apu_se.py
 GPU
 ```
+system.cpu4.shaderActiveTicks              1081377999                       # Total ticks that any CU attached to this shader is active (Unspecified)
+
 system.cpu4.CUs0.instCyclesVALU                 61792                       # Number of cycles needed to execute VALU insts. (Unspecified)
 system.cpu4.CUs0.instCyclesVMemPerSimd::0         2898                       # Number of cycles to send address, command, data from VRF to vector memory unit, per SIMD (Unspecified)
 system.cpu4.CUs0.execRateDist::max_value         9474                       # Instruction Execution Rate: Number of executed vector instructions per cycle (Unspecified)
