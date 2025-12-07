@@ -101,9 +101,9 @@ class ChipletTopo(BaseTopology):
 
 
         # connect cpu cluster and gpu cluster
-        src_node=routers[self.label_cpu],
-        dst_node=routers[self.label_gpu],
-        latency=link_latency[self.label_cpu][self.label_gpu],
+        src_node=routers[self.label_cpu]
+        dst_node=routers[self.label_gpu]
+        latency=link_latency[self.label_cpu][self.label_gpu]
         link_cpu_gpu = IntLink(
             link_id=link_count,
             src_node=src_node,
@@ -115,9 +115,9 @@ class ChipletTopo(BaseTopology):
         link_count += 1
         network.int_links.append(link_cpu_gpu)
 
-        src_node=routers[self.label_gpu],
-        dst_node=routers[self.label_cpu],
-        latency=link_latency[self.label_gpu][self.label_cpu],
+        src_node=routers[self.label_gpu]
+        dst_node=routers[self.label_cpu]
+        latency=link_latency[self.label_gpu][self.label_cpu]
         link_gpu_cpu = IntLink(
             link_id=link_count,
             src_node=src_node,
