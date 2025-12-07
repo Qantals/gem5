@@ -986,7 +986,7 @@ def create_system(
     # add by zyh: begin
     mainChipletTopo = None
     if options.chiplet_topo:
-        mainChipletTopo = ChipletTopo()
+        mainChipletTopo = ChipletTopo(options)
     # add by zyh: end
 
     # Create CPU directory controllers
