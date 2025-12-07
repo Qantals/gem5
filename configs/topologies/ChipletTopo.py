@@ -42,10 +42,15 @@ class ChipletTopo(BaseTopology):
     num_clusters = 2
 
     def __init__(self, options):
-        self.CPUClock = options.CPUClock
-        self.gpu_clock = options.gpu_clock
         if not options.network == "garnet":
             fatal("ChipletTopo only supports garnet network.")
+        if not (hasattr(options, "CPUClock") and hasattr(options, "cpu_voltage")):
+            fatal("ChipletTopo requires --CPUClock and --cpu-voltage option.")
+        if not (hasattr(options, "gpu_clock") and hasattr(options, "gpu_voltage")):
+            fatal("ChipletTopo requires --gpu-clock and --gpu-voltage option.")
+        if not (hasattr(options, "ruby_clock") and hasattr(options, "sys_voltage")):
+            fatal("ChipletTopo requires --ruby-clock and --sys-voltage options.")
+
         self.cpu_nodes = []
         self.gpu_nodes = []
         self.dir_nodes = []
@@ -78,11 +83,30 @@ class ChipletTopo(BaseTopology):
     def makeTopology(self, options, network, IntLink, ExtLink, Router):
         num_routers = self.num_clusters + len(self.dir_nodes)
         link_count = 0
+        cpu_clk_domain = SrcClockDomain(
+            clock=options.CPUClock,
+            voltage_domain=VoltageDomain(voltage=options.cpu_voltage),
+        )
+        cpu_clock = cpu_clk_domain.clock
+        gpu_clk_domain = SrcClockDomain(
+            clock=options.gpu_clock,
+            voltage_domain=VoltageDomain(voltage=options.gpu_voltage),
+        )
+        gpu_clock = gpu_clk_domain.clock
+        ruby_clk_domain = SrcClockDomain(
+            clock=options.ruby_clock,
+            voltage_domain=VoltageDomain(voltage=options.sys_voltage),
+        )
+        ruby_clock = ruby_clk_domain.clock
 
-        routers = [
-            Router(router_id=i)
-            for i in range(num_routers)
-        ]
+        routers = []
+        for i in range(num_routers):
+            router = Router(router_id=i)
+            if i == self.label_cpu:
+                router.clk_domain = cpu_clk_domain
+            elif i == self.label_gpu:
+                router.clk_domain = gpu_clk_domain
+            routers.append(router)
         network.routers = routers
 
         # load latency from numpy 2D array txt
@@ -110,6 +134,10 @@ class ChipletTopo(BaseTopology):
             dst_node=dst_node,
             latency=latency,
         )
+        if cpu_clock != ruby_clock:
+            link_cpu_gpu.src_cdc = True
+        if gpu_clock != ruby_clock:
+            link_cpu_gpu.dst_cdc = True
         if latency_path:
             self._printIntLink(link_count, src_node, dst_node, latency)
         link_count += 1
@@ -124,6 +152,10 @@ class ChipletTopo(BaseTopology):
             dst_node=dst_node,
             latency=latency,
         )
+        if gpu_clock != ruby_clock:
+            link_gpu_cpu.src_cdc = True
+        if cpu_clock != ruby_clock:
+            link_gpu_cpu.dst_cdc = True
         if latency_path:
             self._printIntLink(link_count, src_node, dst_node, latency)
         link_count += 1
@@ -144,6 +176,12 @@ class ChipletTopo(BaseTopology):
             network.ext_links.append(link_ext)
 
             target_cluster = i // self.num_clusters
+            if target_cluster == self.label_cpu:
+                target_clock = cpu_clock
+            elif target_cluster == self.label_gpu:
+                target_clock = gpu_clock
+            else:
+                fatal("Unknown target cluster.")
 
             src_node=routers[i + self.num_clusters]
             dst_node=routers[target_cluster]
@@ -154,6 +192,8 @@ class ChipletTopo(BaseTopology):
                 dst_node=dst_node,
                 latency=latency,
             )
+            if target_clock != ruby_clock:
+                link_int_from.dst_cdc = True
             if latency_path:
                 self._printIntLink(link_count, src_node, dst_node, latency)
             link_count += 1
@@ -168,6 +208,8 @@ class ChipletTopo(BaseTopology):
                 dst_node=dst_node,
                 latency=latency,
             )
+            if target_clock != ruby_clock:
+                link_int_to.src_cdc = True
             if latency_path:
                 self._printIntLink(link_count, src_node, dst_node, latency)
             link_count += 1
