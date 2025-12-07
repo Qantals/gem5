@@ -133,11 +133,13 @@ class CPCntrl(GPU_VIPER_CorePair_Controller, CntrlBase):
         self.send_evictions = True if options.cpu_type == "X86O3CPU" else False
 
         self.ruby_system = ruby_system
+        # add by zyh: begin
         if hasattr(options, "CPUClock") and hasattr(options, "cpu_voltage"):
             self.clk_domain = SrcClockDomain(
                 clock=options.CPUClock,
                 voltage_domain=VoltageDomain(voltage=options.cpu_voltage),
             )
+        # add by zyh: end
 
         if options.recycle_latency:
             self.recycle_latency = options.recycle_latency
@@ -981,6 +983,11 @@ def create_system(
         mainCluster = Cluster(intBW=8)  # 16 GB/s
         cpuCluster = Cluster(extBW=8, intBW=8)  # 16 GB/s
         gpuCluster = Cluster(extBW=8, intBW=8)  # 16 GB/s
+    # add by zyh: begin
+    mainChipletTopo = None
+    if options.chiplet_topo:
+        mainChipletTopo = ChipletTopo()
+    # add by zyh: end
 
     # Create CPU directory controllers
     dir_cntrl_nodes = construct_dirs(
@@ -988,6 +995,10 @@ def create_system(
     )
     for dir_cntrl in dir_cntrl_nodes:
         mainCluster.add(dir_cntrl)
+        # add by zyh: begin
+        if options.chiplet_topo:
+            mainChipletTopo.addDirController(dir_cntrl)
+        # add by zyh: end
 
     # Create CPU core pairs
     (cp_sequencers, cp_cntrl_nodes) = construct_corepairs(
@@ -996,6 +1007,10 @@ def create_system(
     cpu_sequencers.extend(cp_sequencers)
     for cp_cntrl in cp_cntrl_nodes:
         cpuCluster.add(cp_cntrl)
+        # add by zyh: begin
+        if options.chiplet_topo:
+            mainChipletTopo.addCPUCluster(cp_cntrl)
+        # add by zyh: end
 
     # Register CPUs and caches for each CorePair and directory (SE mode only)
     if not full_system:
@@ -1067,6 +1082,10 @@ def create_system(
     cpu_sequencers.extend(tcp_sequencers)
     for tcp_cntrl in tcp_cntrl_nodes:
         gpuCluster.add(tcp_cntrl)
+        # add by zyh: begin
+        if options.chiplet_topo:
+            mainChipletTopo.addGPUCluster(tcp_cntrl)
+        # add by zyh: end
 
     # Create SQCs
     (sqc_sequencers, sqc_cntrl_nodes) = construct_sqcs(
@@ -1075,6 +1094,10 @@ def create_system(
     cpu_sequencers.extend(sqc_sequencers)
     for sqc_cntrl in sqc_cntrl_nodes:
         gpuCluster.add(sqc_cntrl)
+        # add by zyh: begin
+        if options.chiplet_topo:
+            mainChipletTopo.addGPUCluster(sqc_cntrl)
+        # add by zyh: end
 
     # Create Scalars
     (scalar_sequencers, scalar_cntrl_nodes) = construct_scalars(
@@ -1083,6 +1106,10 @@ def create_system(
     cpu_sequencers.extend(scalar_sequencers)
     for scalar_cntrl in scalar_cntrl_nodes:
         gpuCluster.add(scalar_cntrl)
+        # add by zyh: begin
+        if options.chiplet_topo:
+            mainChipletTopo.addGPUCluster(scalar_cntrl)
+        # add by zyh: end
 
     # Create command processors
     (cmdproc_sequencers, cmdproc_cntrl_nodes) = construct_cmdprocs(
@@ -1091,6 +1118,10 @@ def create_system(
     cpu_sequencers.extend(cmdproc_sequencers)
     for cmdproc_cntrl in cmdproc_cntrl_nodes:
         gpuCluster.add(cmdproc_cntrl)
+        # add by zyh: begin
+        if options.chiplet_topo:
+            mainChipletTopo.addGPUCluster(cmdproc_cntrl)
+        # add by zyh: end
 
     # Create TCCs
     tcc_cntrl_nodes = construct_tccs(
@@ -1098,6 +1129,10 @@ def create_system(
     )
     for tcc_cntrl in tcc_cntrl_nodes:
         gpuCluster.add(tcc_cntrl)
+        # add by zyh: begin
+        if options.chiplet_topo:
+            mainChipletTopo.addGPUCluster(tcc_cntrl)
+        # add by zyh: end
 
     for i, dma_device in enumerate(dma_devices):
         dma_seq = DMASequencer(version=i, ruby_system=ruby_system)
@@ -1126,6 +1161,10 @@ def create_system(
         dma_cntrl.responseFromDir.in_port = ruby_system.network.out_port
         dma_cntrl.mandatoryQueue = MessageBuffer(buffer_size=0)
         gpuCluster.add(dma_cntrl)
+        # add by zyh: begin
+        if options.chiplet_topo:
+            mainChipletTopo.addGPUCluster(dma_cntrl)
+        # add by zyh: end
 
     # Add cpu/gpu clusters to main cluster
     mainCluster.add(cpuCluster)
@@ -1133,4 +1172,9 @@ def create_system(
 
     ruby_system.network.number_of_virtual_networks = 11
 
-    return (cpu_sequencers, dir_cntrl_nodes, mainCluster)
+    # modify by zyh: begin
+    if options.chiplet_topo:
+        return (cpu_sequencers, dir_cntrl_nodes, mainChipletTopo)
+    else:
+        return (cpu_sequencers, dir_cntrl_nodes, mainCluster)
+    # modify by zyh: end

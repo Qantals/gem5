@@ -438,12 +438,20 @@ parser.add_argument(
     help="Download resources to this directory",
 )
 
+# add by zyh: begin
 parser.add_argument(
     "--latency-path",
     type=str,
     default="",
     help="Floorplan latency profile with given config filepath",
 )
+parser.add_argument(
+    "--chiplet-topo",
+    action="store_true",
+    default=False,
+    help="Use customed chiplet topology",
+)
+# add by zyh: end
 
 Ruby.define_options(parser)
 

@@ -26,7 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from common import FileSystemConfig
-from topologies.BaseTopology import SimpleTopology
+from topologies.BaseTopology import BaseTopology
 from topologies.Cluster import Cluster
 import sys
 
@@ -34,49 +34,52 @@ from m5.objects import *
 from m5.params import *
 
 
-class ChipletTopo(SimpleTopology):
+class ChipletTopo(BaseTopology):
     description = "ChipletTopo"
+    # hard code here
+    label_cpu = 0
+    label_gpu = 1
+    num_clusters = 2
 
-    def __init__(self, intBW=0, extBW=0, dirLatency=0):
-        self.nodes = []
-        self.router = None  # created in makeTopology
-        self.intBW = intBW
-        self.extBW = extBW
-        self.dirLatency = dirLatency
+    def __init__(self):
+        self.cpu_nodes = []
+        self.gpu_nodes = []
+        self.dir_nodes = []
 
-    def add(self, node):
-        self.nodes.append(node)
+    def addCPUCluster(self, node):
+        self.cpu_nodes.append(node)
+
+    def addGPUCluster(self, node):
+        self.gpu_nodes.append(node)
+
+    def addDirController(self, node):
+        self.dir_nodes.append(node)
+    
+    def printIntLink(self, link_id, src_node, dst_node, latency):
+        print(
+            f"link_id: {link_id}, "
+            f"src router id: {src_node.router_id}, "
+            f"dst router id: {dst_node.router_id}, "
+            f"latency: {latency}"
+        )
+
+    def printExtLink(self, link_id, ext_node, int_node, latency):
+        print(
+            f"link_id: {link_id}, "
+            f"ext node: {ext_node.type}_{ext_node.version}, "
+            f"int router id: {int_node.router_id}, "
+            f"latency: {latency}"
+        )
 
     def makeTopology(self, options, network, IntLink, ExtLink, Router):
-        # wait for improvement
-        num_clusters = 2
-        num_clusters_latency = 2
-        num_routers = len(self.nodes)
-
-        # default values for link latency and router latency.
-        # Can be over-ridden on a per link/router basis
-        # link_latency = options.link_latency  # used by simple and garnet
-        # router_latency = options.router_latency  # only used by garnet
-
-        # link counter to set unique link ids
+        num_routers = self.num_clusters + len(self.dir_nodes)
         link_count = 0
-        cluster_nodes = []
-        dir_nodes = []
-
-        for node in self.nodes:
-            if type(node) == Cluster:
-                node.makeTopology(options, network, IntLink, ExtLink, Router)
-                cluster_nodes.append(node)
-            elif node.type == "GPU_VIPER_Directory_Controller":
-                dir_nodes.append(node)
-            else:
-                raise Exception(f"Unknown node type in ChipletTopo: {node.type}")
 
         routers = [
             Router(router_id=i)
-            for i in range(num_clusters, num_routers)
+            for i in range(num_routers)
         ]
-        network.routers += routers
+        network.routers = routers
 
         # load latency from numpy 2D array txt
         latency_path = options.latency_path
@@ -87,122 +90,112 @@ class ChipletTopo(SimpleTopology):
                     s = line.strip()
                     if s:
                         link_latency.append(list(map(int, s.split())))
-            print("----------- chiplet latency info ------------")
+            print("----------- chiplet latency info begin ------------")
         else:
             link_latency = [[1 for _ in range(num_routers)] for _ in range(num_routers)]
 
-        # connect clusters
-        link_out_cluster = IntLink(
+
+
+        # connect cpu cluster and gpu cluster
+        src_node=routers[self.label_cpu],
+        dst_node=routers[self.label_gpu],
+        latency=link_latency[self.label_cpu][self.label_gpu],
+        link_cpu_gpu = IntLink(
             link_id=link_count,
-            src_node=cluster_nodes[0].router,
-            dst_node=cluster_nodes[1].router,
-            latency=link_latency[0][1],
+            src_node=src_node,
+            dst_node=dst_node,
+            latency=latency,
         )
         if latency_path:
-            print(
-                f"link_id: {link_count}, "
-                f"src router: {cluster_nodes[0].router.router_id}, "
-                f"dst router: {cluster_nodes[1].router.router_id}, "
-                f"latency: {link_latency[0][1]}"
-            )
+            self.printIntLink(link_count, src_node, dst_node, latency)
         link_count += 1
-        link_in_cluster = IntLink(
+        network.int_links.append(link_cpu_gpu)
+
+        src_node=routers[self.label_gpu],
+        dst_node=routers[self.label_cpu],
+        latency=link_latency[self.label_gpu][self.label_cpu],
+        link_gpu_cpu = IntLink(
             link_id=link_count,
-            src_node=cluster_nodes[1].router,
-            dst_node=cluster_nodes[0].router,
-            latency=link_latency[1][0],
+            src_node=src_node,
+            dst_node=dst_node,
+            latency=latency,
         )
         if latency_path:
-            print(
-                f"link_id: {link_count}, "
-                f"src router: {cluster_nodes[1].router.router_id}, "
-                f"dst router: {cluster_nodes[0].router.router_id}, "
-                f"latency: {link_latency[1][0]}"
-            )
+            self.printIntLink(link_count, src_node, dst_node, latency)
         link_count += 1
-
-        if node.extBW:
-            link_out_cluster.bandwidth_factor = node.extBW
-            link_in_cluster.bandwidth_factor = node.extBW
-
-        # if there is an internal b/w for this node
-        # and no ext b/w to override
-        elif self.intBW:
-            link_out_cluster.bandwidth_factor = self.intBW
-            link_in_cluster.bandwidth_factor = self.intBW
-
-        network.int_links.append(link_out_cluster)
-        network.int_links.append(link_in_cluster)
+        network.int_links.append(link_gpu_cpu)
 
         # connect dir nodes
-        for i, node in enumerate(dir_nodes):
-            link_ext_dir = ExtLink(
+        for i, node in enumerate(self.dir_nodes):
+            ext_node = node
+            int_node = routers[i + self.num_clusters]
+            link_ext = ExtLink(
                 link_id=link_count,
-                ext_node=node,
-                int_node=routers[i],
-            )
-            link_count += 1
-
-            if self.intBW:
-                link_ext_dir.bandwidth_factor = self.intBW
-            if self.dirLatency:
-                link_ext_dir.latency = self.dirLatency
-            if latency_path:
-                print(
-                    f"link_id: {link_count - 1}, "
-                    f"ext node: {node.type}_{i}, "
-                    f"int node: {routers[i].router_id}, "
-                    f"latency: {link_ext_dir.latency}"
-                )
-
-            network.ext_links.append(link_ext_dir)
-
-            target_cluster = i // num_clusters
-
-            link_out_dir = IntLink(
-                link_id=link_count,
-                src_node=routers[i],
-                dst_node=cluster_nodes[target_cluster].router,
-                latency=link_latency[i + num_clusters_latency][target_cluster],
+                ext_node=ext_node,
+                int_node=int_node,
             )
             if latency_path:
-                print(
-                    f"link_id: {link_count}, "
-                    f"src router: {routers[i].router_id}, "
-                    f"dst router: {cluster_nodes[target_cluster].router.router_id}, "
-                    f"latency: {link_latency[i + num_clusters_latency][target_cluster]}"
-                )
+                self.printExtLink(link_count, ext_node, int_node, latency=1)
             link_count += 1
-            link_in_dir = IntLink(
+            network.ext_links.append(link_ext)
+
+            target_cluster = i // self.num_clusters
+
+            src_node=routers[i + self.num_clusters]
+            dst_node=routers[target_cluster]
+            latency=link_latency[i + self.num_clusters][target_cluster]
+            link_int_from = IntLink(
                 link_id=link_count,
-                src_node=cluster_nodes[target_cluster].router,
-                dst_node=routers[i],
-                latency=link_latency[target_cluster][i + num_clusters_latency],
+                src_node=src_node,
+                dst_node=dst_node,
+                latency=latency,
             )
             if latency_path:
-                print(
-                    f"link_id: {link_count}, "
-                    f"src router: {cluster_nodes[target_cluster].router.router_id}, "
-                    f"dst router: {routers[i].router_id}, "
-                    f"latency: {link_latency[target_cluster][i + num_clusters_latency]}"
-                )
+                self.printIntLink(link_count, src_node, dst_node, latency)
             link_count += 1
+            network.int_links.append(link_int_from)
 
-            if cluster_nodes[target_cluster].extBW:
-                link_out_dir.bandwidth_factor = cluster_nodes[target_cluster].extBW
-                link_in_dir.bandwidth_factor = cluster_nodes[target_cluster].extBW
+            src_node=routers[target_cluster]
+            dst_node=routers[i + self.num_clusters]
+            latency=link_latency[target_cluster][i + self.num_clusters]
+            link_int_to = IntLink(
+                link_id=link_count,
+                src_node=src_node,
+                dst_node=dst_node,
+                latency=latency,
+            )
+            if latency_path:
+                self.printIntLink(link_count, src_node, dst_node, latency)
+            link_count += 1
+            network.int_links.append(link_int_to)
 
-            # if there is an internal b/w for this node
-            # and no ext b/w to override
-            elif self.intBW:
-                link_out_dir.bandwidth_factor = self.intBW
-                link_in_dir.bandwidth_factor = self.intBW
+        # connect cpu cluster nodes
+        for node in self.cpu_nodes:
+            ext_node = node
+            int_node = routers[self.label_cpu]
+            link_ext = ExtLink(
+                link_id=link_count,
+                ext_node=ext_node,
+                int_node=int_node,
+            )
+            # if latency_path:
+            #     self.printExtLink(link_count, ext_node, int_node, latency=1)
+            link_count += 1
+            network.ext_links.append(link_ext)
 
-            network.int_links.append(link_out_dir)
-            network.int_links.append(link_in_dir)
+        # connect gpu cluster nodes
+        for node in self.gpu_nodes:
+            ext_node = node
+            int_node = routers[self.label_gpu]
+            link_ext = ExtLink(
+                link_id=link_count,
+                ext_node=ext_node,
+                int_node=int_node,
+            )
+            # if latency_path:
+            #     self.printExtLink(link_count, ext_node, int_node, latency=1)
+            link_count += 1
+            network.ext_links.append(link_ext)
 
-
-    def __len__(self):
-        return len([i for i in self.nodes if type(i) != Cluster]) + sum(
-            [len(i) for i in self.nodes if type(i) == Cluster]
-        )
+        if latency_path:
+            print("----------- chiplet latency info end ------------")
