@@ -326,11 +326,11 @@ class TCCCntrl(GPU_VIPER_TCC_Controller, CntrlBase):
         self.L2cache.resourceStalls = options.no_tcc_resource_stalls
 
         self.ruby_system = ruby_system
-        # if hasattr(options, "gpu_clock") and hasattr(options, "gpu_voltage"):
-        #     self.clk_domain = SrcClockDomain(
-        #         clock=options.gpu_clock,
-        #         voltage_domain=VoltageDomain(voltage=options.gpu_voltage),
-        #     )
+        if hasattr(options, "gpu_clock") and hasattr(options, "gpu_voltage"):
+            self.clk_domain = SrcClockDomain(
+                clock=options.gpu_clock,
+                voltage_domain=VoltageDomain(voltage=options.gpu_voltage),
+            )
 
         if options.recycle_latency:
             self.recycle_latency = options.recycle_latency
@@ -967,18 +967,18 @@ def create_system(
     # This is the base crossbar that connects the L3s, Dirs, and cpu/gpu
     # Clusters
     crossbar_bw = None
-    mainChipletTopo = None
+    mainCluster = None
     cpuCluster = None
     gpuCluster = None
 
     if hasattr(options, "bw_scalor") and options.bw_scalor > 0:
         # Assuming a 2GHz clock
         crossbar_bw = 16 * options.num_compute_units * options.bw_scalor
-        mainChipletTopo = Cluster(intBW=crossbar_bw)
+        mainCluster = Cluster(intBW=crossbar_bw)
         cpuCluster = Cluster(extBW=crossbar_bw, intBW=crossbar_bw)
         gpuCluster = Cluster(extBW=crossbar_bw, intBW=crossbar_bw)
     else:
-        mainChipletTopo = Cluster(intBW=8)  # 16 GB/s
+        mainCluster = Cluster(intBW=8)  # 16 GB/s
         cpuCluster = Cluster(extBW=8, intBW=8)  # 16 GB/s
         gpuCluster = Cluster(extBW=8, intBW=8)  # 16 GB/s
 
@@ -987,7 +987,7 @@ def create_system(
         options, system, ruby_system, ruby_system.network
     )
     for dir_cntrl in dir_cntrl_nodes:
-        mainChipletTopo.add(dir_cntrl)
+        mainCluster.add(dir_cntrl)
 
     # Create CPU core pairs
     (cp_sequencers, cp_cntrl_nodes) = construct_corepairs(
@@ -1128,9 +1128,9 @@ def create_system(
         gpuCluster.add(dma_cntrl)
 
     # Add cpu/gpu clusters to main cluster
-    mainChipletTopo.add(cpuCluster)
-    mainChipletTopo.add(gpuCluster)
+    mainCluster.add(cpuCluster)
+    mainCluster.add(gpuCluster)
 
     ruby_system.network.number_of_virtual_networks = 11
 
-    return (cpu_sequencers, dir_cntrl_nodes, mainChipletTopo)
+    return (cpu_sequencers, dir_cntrl_nodes, mainCluster)

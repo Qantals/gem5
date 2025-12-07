@@ -14,7 +14,7 @@
 
 
 # apu_se.py
-Decision: run latest GPU FS and changes frequency to check. Because origin `apu_se.py` meets problem for frequency.
+Seen expected results with `m5out_square_originTopo/garnet_memcfg_cpClk`
 
 Finding:
 1. IPC_CPU: depends solely on ration freq_CPU : freq_Ruby
