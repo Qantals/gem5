@@ -83,6 +83,7 @@ class ChipletTopo(BaseTopology):
     def makeTopology(self, options, network, IntLink, ExtLink, Router):
         num_routers = self.num_clusters + len(self.dir_nodes)
         link_count = 0
+
         cpu_clk_domain = SrcClockDomain(
             clock=options.CPUClock,
             voltage_domain=VoltageDomain(voltage=options.cpu_voltage),
@@ -122,7 +123,8 @@ class ChipletTopo(BaseTopology):
         else:
             link_latency = [[1 for _ in range(num_routers)] for _ in range(num_routers)]
 
-
+        int_links = []
+        ext_links = []
 
         # connect cpu cluster and gpu cluster
         src_node=routers[self.label_cpu]
@@ -141,7 +143,7 @@ class ChipletTopo(BaseTopology):
         if latency_path:
             self._printIntLink(link_count, src_node, dst_node, latency)
         link_count += 1
-        network.int_links.append(link_cpu_gpu)
+        int_links.append(link_cpu_gpu)
 
         src_node=routers[self.label_gpu]
         dst_node=routers[self.label_cpu]
@@ -159,7 +161,7 @@ class ChipletTopo(BaseTopology):
         if latency_path:
             self._printIntLink(link_count, src_node, dst_node, latency)
         link_count += 1
-        network.int_links.append(link_gpu_cpu)
+        int_links.append(link_gpu_cpu)
 
         # connect dir nodes
         for i, node in enumerate(self.dir_nodes):
@@ -173,7 +175,7 @@ class ChipletTopo(BaseTopology):
             if latency_path:
                 self._printExtLink(link_count, ext_node, int_node, latency=1)
             link_count += 1
-            network.ext_links.append(link_ext)
+            ext_links.append(link_ext)
 
             target_cluster = i // self.num_clusters
             if target_cluster == self.label_cpu:
@@ -197,7 +199,7 @@ class ChipletTopo(BaseTopology):
             if latency_path:
                 self._printIntLink(link_count, src_node, dst_node, latency)
             link_count += 1
-            network.int_links.append(link_int_from)
+            int_links.append(link_int_from)
 
             src_node=routers[target_cluster]
             dst_node=routers[i + self.num_clusters]
@@ -213,7 +215,7 @@ class ChipletTopo(BaseTopology):
             if latency_path:
                 self._printIntLink(link_count, src_node, dst_node, latency)
             link_count += 1
-            network.int_links.append(link_int_to)
+            int_links.append(link_int_to)
 
         # connect cpu cluster nodes
         for node in self.cpu_nodes:
@@ -227,7 +229,7 @@ class ChipletTopo(BaseTopology):
             # if latency_path:
             #     self.printExtLink(link_count, ext_node, int_node, latency=1)
             link_count += 1
-            network.ext_links.append(link_ext)
+            ext_links.append(link_ext)
 
         # connect gpu cluster nodes
         for node in self.gpu_nodes:
@@ -241,7 +243,10 @@ class ChipletTopo(BaseTopology):
             # if latency_path:
             #     self.printExtLink(link_count, ext_node, int_node, latency=1)
             link_count += 1
-            network.ext_links.append(link_ext)
+            ext_links.append(link_ext)
+
+        network.int_links = int_links
+        network.ext_links = ext_links
 
         if latency_path:
             print("----------- chiplet latency info end ------------")
