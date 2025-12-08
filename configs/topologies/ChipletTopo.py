@@ -39,7 +39,7 @@ class ChipletTopo(BaseTopology):
     # hard code here
     label_cpu = 0
     label_gpu = 1
-    num_clusters = 2
+    num_cores = 2
 
     def __init__(self, options):
         if not options.network == "garnet":
@@ -81,7 +81,8 @@ class ChipletTopo(BaseTopology):
         )
 
     def makeTopology(self, options, network, IntLink, ExtLink, Router):
-        num_routers = self.num_clusters + len(self.dir_nodes)
+        num_routers = 2 * self.num_cores + len(self.dir_nodes)
+        num_noi = self.num_cores + len(self.dir_nodes)
         link_count = 0
 
         cpu_clk_domain = SrcClockDomain(
@@ -100,12 +101,13 @@ class ChipletTopo(BaseTopology):
         )
         dir_clock = dir_clk_domain.clock
 
+        # sequence: cpu_noi, gpu_noi, dir0_noi, dir1_noi, dir2_noi, dir3_noi, cpu_noc, gpu_noc
         routers = []
         for i in range(num_routers):
             router = Router(router_id=i)
-            if i == self.label_cpu:
+            if i == num_noi + self.label_cpu:
                 router.clk_domain = cpu_clk_domain
-            elif i == self.label_gpu:
+            elif i == num_noi + self.label_gpu:
                 router.clk_domain = gpu_clk_domain
             routers.append(router)
         network.routers = routers
@@ -126,7 +128,7 @@ class ChipletTopo(BaseTopology):
         int_links = []
         ext_links = []
 
-        # connect cpu cluster and gpu cluster
+        # connect between cpu noi and gpu noi
         src_node=routers[self.label_cpu]
         dst_node=routers[self.label_gpu]
         latency=link_latency[self.label_cpu][self.label_gpu]
@@ -136,10 +138,6 @@ class ChipletTopo(BaseTopology):
             dst_node=dst_node,
             latency=latency,
         )
-        if cpu_clock != dir_clock:
-            link_cpu_gpu.src_cdc = True
-        if gpu_clock != dir_clock:
-            link_cpu_gpu.dst_cdc = True
         if latency_path:
             self._printIntLink(link_count, src_node, dst_node, latency)
         link_count += 1
@@ -154,19 +152,77 @@ class ChipletTopo(BaseTopology):
             dst_node=dst_node,
             latency=latency,
         )
-        if gpu_clock != dir_clock:
-            link_gpu_cpu.src_cdc = True
-        if cpu_clock != dir_clock:
-            link_gpu_cpu.dst_cdc = True
         if latency_path:
             self._printIntLink(link_count, src_node, dst_node, latency)
         link_count += 1
         int_links.append(link_gpu_cpu)
 
+        # connect cpu noc and noi
+        src_node=routers[self.label_cpu]
+        dst_node=routers[num_noi + self.label_cpu]
+        latency=1
+        link_cpu_noi_noc = IntLink(
+            link_id=link_count,
+            src_node=src_node,
+            dst_node=dst_node,
+            latency=latency,
+        )
+        link_cpu_noi_noc.dst_cdc = True
+        if latency_path:
+            self._printIntLink(link_count, src_node, dst_node, latency)
+        link_count += 1
+        int_links.append(link_cpu_noi_noc)
+
+        src_node=routers[num_noi + self.label_cpu]
+        dst_node=routers[self.label_cpu]
+        latency=1
+        link_cpu_noc_noi = IntLink(
+            link_id=link_count,
+            src_node=src_node,
+            dst_node=dst_node,
+            latency=latency,
+        )
+        link_cpu_noc_noi.src_cdc = True
+        if latency_path:
+            self._printIntLink(link_count, src_node, dst_node, latency)
+        link_count += 1
+        int_links.append(link_cpu_noc_noi)
+
+        # connect gpu noc and noi
+        src_node=routers[self.label_gpu]
+        dst_node=routers[num_noi + self.label_gpu]
+        latency=1
+        link_gpu_noi_noc = IntLink(
+            link_id=link_count,
+            src_node=src_node,
+            dst_node=dst_node,
+            latency=latency,
+        )
+        link_gpu_noi_noc.dst_cdc = True
+        if latency_path:
+            self._printIntLink(link_count, src_node, dst_node, latency)
+        link_count += 1
+        int_links.append(link_gpu_noi_noc)
+
+        src_node=routers[num_noi + self.label_gpu]
+        dst_node=routers[self.label_gpu]
+        latency=1
+        link_gpu_noc_noi = IntLink(
+            link_id=link_count,
+            src_node=src_node,
+            dst_node=dst_node,
+            latency=latency,
+        )
+        link_gpu_noc_noi.src_cdc = True
+        if latency_path:
+            self._printIntLink(link_count, src_node, dst_node, latency)
+        link_count += 1
+        int_links.append(link_gpu_noc_noi)
+
         # connect dir nodes
         for i, node in enumerate(self.dir_nodes):
             ext_node = node
-            int_node = routers[i + self.num_clusters]
+            int_node = routers[i + self.num_cores]
             link_ext = ExtLink(
                 link_id=link_count,
                 ext_node=ext_node,
@@ -177,71 +233,61 @@ class ChipletTopo(BaseTopology):
             link_count += 1
             ext_links.append(link_ext)
 
-            target_cluster = i // self.num_clusters
-            if target_cluster == self.label_cpu:
-                target_clock = cpu_clock
-            elif target_cluster == self.label_gpu:
-                target_clock = gpu_clock
-            else:
-                fatal("Unknown target cluster.")
+            target_cluster = i // self.num_cores
 
-            src_node=routers[i + self.num_clusters]
+            src_node=routers[i + self.num_cores]
             dst_node=routers[target_cluster]
-            latency=link_latency[i + self.num_clusters][target_cluster]
+            latency=link_latency[i + self.num_cores][target_cluster]
             link_int_from = IntLink(
                 link_id=link_count,
                 src_node=src_node,
                 dst_node=dst_node,
                 latency=latency,
             )
-            if target_clock != dir_clock:
-                link_int_from.dst_cdc = True
             if latency_path:
                 self._printIntLink(link_count, src_node, dst_node, latency)
             link_count += 1
             int_links.append(link_int_from)
 
             src_node=routers[target_cluster]
-            dst_node=routers[i + self.num_clusters]
-            latency=link_latency[target_cluster][i + self.num_clusters]
+            dst_node=routers[i + self.num_cores]
+            latency=link_latency[target_cluster][i + self.num_cores]
             link_int_to = IntLink(
                 link_id=link_count,
                 src_node=src_node,
                 dst_node=dst_node,
                 latency=latency,
             )
-            if target_clock != dir_clock:
-                link_int_to.src_cdc = True
             if latency_path:
                 self._printIntLink(link_count, src_node, dst_node, latency)
             link_count += 1
             int_links.append(link_int_to)
 
-        # connect cpu cluster nodes
+        # connect cpu noc nodes
         for node in self.cpu_nodes:
             ext_node = node
-            int_node = routers[self.label_cpu]
+            int_node = routers[num_noi + self.label_cpu]
             link_ext = ExtLink(
                 link_id=link_count,
                 ext_node=ext_node,
                 int_node=int_node,
             )
-            # if latency_path:
-            #     self.printExtLink(link_count, ext_node, int_node, latency=1)
+            if latency_path:
+                self._printExtLink(link_count, ext_node, int_node, latency=1)
             link_count += 1
             ext_links.append(link_ext)
 
-        # connect gpu cluster nodes
+        # connect gpu noc nodes
         for node in self.gpu_nodes:
             ext_node = node
-            int_node = routers[self.label_gpu]
+            int_node = routers[num_noi + self.label_gpu]
             link_ext = ExtLink(
                 link_id=link_count,
                 ext_node=ext_node,
                 int_node=int_node,
             )
-            # if latency_path:
-            #     self.printExtLink(link_count, ext_node, int_node, latency=1)
+            if latency_path:
+                self._printExtLink(link_count, ext_node, int_node, latency=1)
             link_count += 1
             ext_links.append(link_ext)
 
