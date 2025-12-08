@@ -773,9 +773,12 @@ gpu_hsapp = HSAPacketProcessor(
 )
 dispatcher = GPUDispatcher(kernel_exit_events=True)
 gpu_cmd_proc = GPUCommandProcessor(hsapp=gpu_hsapp, dispatcher=dispatcher)
-gpu_driver.device = gpu_cmd_proc
+# modified by zyh: begin
+# gpu_driver.device = gpu_cmd_proc
 shader.dispatcher = dispatcher
 shader.gpu_cmd_proc = gpu_cmd_proc
+gpu_driver.device = gpu_cmd_proc
+# modified by zyh: end
 
 
 # Create and assign the workload Check for rel_path in elements of
