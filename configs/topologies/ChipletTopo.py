@@ -94,11 +94,11 @@ class ChipletTopo(BaseTopology):
             voltage_domain=VoltageDomain(voltage=options.gpu_voltage),
         )
         gpu_clock = gpu_clk_domain.clock
-        ruby_clk_domain = SrcClockDomain(
+        dir_clk_domain = SrcClockDomain(
             clock=options.ruby_clock,
             voltage_domain=VoltageDomain(voltage=options.sys_voltage),
         )
-        ruby_clock = ruby_clk_domain.clock
+        dir_clock = dir_clk_domain.clock
 
         routers = []
         for i in range(num_routers):
@@ -136,9 +136,9 @@ class ChipletTopo(BaseTopology):
             dst_node=dst_node,
             latency=latency,
         )
-        if cpu_clock != ruby_clock:
+        if cpu_clock != dir_clock:
             link_cpu_gpu.src_cdc = True
-        if gpu_clock != ruby_clock:
+        if gpu_clock != dir_clock:
             link_cpu_gpu.dst_cdc = True
         if latency_path:
             self._printIntLink(link_count, src_node, dst_node, latency)
@@ -154,9 +154,9 @@ class ChipletTopo(BaseTopology):
             dst_node=dst_node,
             latency=latency,
         )
-        if gpu_clock != ruby_clock:
+        if gpu_clock != dir_clock:
             link_gpu_cpu.src_cdc = True
-        if cpu_clock != ruby_clock:
+        if cpu_clock != dir_clock:
             link_gpu_cpu.dst_cdc = True
         if latency_path:
             self._printIntLink(link_count, src_node, dst_node, latency)
@@ -194,7 +194,7 @@ class ChipletTopo(BaseTopology):
                 dst_node=dst_node,
                 latency=latency,
             )
-            if target_clock != ruby_clock:
+            if target_clock != dir_clock:
                 link_int_from.dst_cdc = True
             if latency_path:
                 self._printIntLink(link_count, src_node, dst_node, latency)
@@ -210,7 +210,7 @@ class ChipletTopo(BaseTopology):
                 dst_node=dst_node,
                 latency=latency,
             )
-            if target_clock != ruby_clock:
+            if target_clock != dir_clock:
                 link_int_to.src_cdc = True
             if latency_path:
                 self._printIntLink(link_count, src_node, dst_node, latency)
