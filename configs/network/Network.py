@@ -195,6 +195,21 @@ def init_network(options, network, InterfaceClass):
                 vtype="OBJECT_LINK",
                 width=intLink.dst_node.width,
             )
+            # add by zyh: begin
+            if options.chiplet_clock_domain:
+                intLink.src_net_bridge.clk_domain = (
+                    intLink.src_net_bridge.link.clk_domain
+                )
+                intLink.src_cred_bridge.clk_domain = (
+                    intLink.src_cred_bridge.link.clk_domain
+                )
+                intLink.dst_net_bridge.clk_domain = (
+                    intLink.dst_net_bridge.link.clk_domain
+                )
+                intLink.dst_cred_bridge.clk_domain = (
+                    intLink.dst_cred_bridge.link.clk_domain
+                )
+            # add by zyh: end
 
         for extLink in network.ext_links:
             ext_net_bridges = []
@@ -264,6 +279,25 @@ def init_network(options, network, InterfaceClass):
                 )
             )
             extLink.int_cred_bridge = int_cred_bridges
+            # add by zyh: begin
+            if options.chiplet_clock_domain:
+                for ext_net_bridge in extLink.ext_net_bridge:
+                    ext_net_bridge.clk_domain = (
+                        ext_net_bridge.link.clk_domain
+                    )
+                for ext_cred_bridge in extLink.ext_cred_bridge:
+                    ext_cred_bridge.clk_domain = (
+                        ext_cred_bridge.link.clk_domain
+                    )
+                for int_net_bridge in extLink.int_net_bridge:
+                    int_net_bridge.clk_domain = (
+                        int_net_bridge.link.clk_domain
+                    )
+                for int_cred_bridge in extLink.int_cred_bridge:
+                    int_cred_bridge.clk_domain = (
+                        int_cred_bridge.link.clk_domain
+                    )
+            # add by zyh: end
 
     if options.network == "simple":
         if options.simple_physical_channels:
@@ -276,6 +310,13 @@ def init_network(options, network, InterfaceClass):
         netifs = [
             InterfaceClass(id=i) for (i, n) in enumerate(network.ext_links)
         ]
+        # add by zyh: begin
+        if options.chiplet_clock_domain:
+            for netif in netifs:
+                netif.clk_domain = (
+                    network.ext_links[netif.id].ext_net_bridge[0].clk_domain
+                )
+        # add by zyh: end
         network.netifs = netifs
 
     if options.network_fault_model:

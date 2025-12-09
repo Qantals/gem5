@@ -1,30 +1,3 @@
-# Copyright (c) 2010 Advanced Micro Devices, Inc.
-#               2016 Georgia Institute of Technology
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are
-# met: redistributions of source code must retain the above copyright
-# notice, this list of conditions and the following disclaimer;
-# redistributions in binary form must reproduce the above copyright
-# notice, this list of conditions and the following disclaimer in the
-# documentation and/or other materials provided with the distribution;
-# neither the name of the copyright holders nor the names of its
-# contributors may be used to endorse or promote products derived from
-# this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 from common import FileSystemConfig
 from topologies.BaseTopology import BaseTopology
 from topologies.Cluster import Cluster
@@ -44,12 +17,13 @@ class ChipletTopo(BaseTopology):
     def __init__(self, options):
         if not options.network == "garnet":
             fatal("ChipletTopo only supports garnet network.")
-        if not (hasattr(options, "CPUClock") and hasattr(options, "cpu_voltage")):
-            fatal("ChipletTopo requires --CPUClock and --cpu-voltage option.")
-        if not (hasattr(options, "gpu_clock") and hasattr(options, "gpu_voltage")):
-            fatal("ChipletTopo requires --gpu-clock and --gpu-voltage option.")
-        if not (hasattr(options, "ruby_clock") and hasattr(options, "sys_voltage")):
-            fatal("ChipletTopo requires --ruby-clock and --sys-voltage options.")
+        if options.chiplet_clock_domain:
+            if not (hasattr(options, "CPUClock") and hasattr(options, "cpu_voltage")):
+                fatal("ChipletTopo requires --CPUClock and --cpu-voltage option.")
+            if not (hasattr(options, "gpu_clock") and hasattr(options, "gpu_voltage")):
+                fatal("ChipletTopo requires --gpu-clock and --gpu-voltage option.")
+            if not (hasattr(options, "ruby_clock") and hasattr(options, "sys_voltage")):
+                fatal("ChipletTopo requires --ruby-clock and --sys-voltage options.")
 
         self.cpu_nodes = []
         self.gpu_nodes = []
@@ -86,30 +60,29 @@ class ChipletTopo(BaseTopology):
         link_int_count = 0
         link_ext_count = 0
 
-        cpu_clk_domain = SrcClockDomain(
-            clock=options.CPUClock,
-            voltage_domain=VoltageDomain(voltage=options.cpu_voltage),
-        )
-        cpu_clock = cpu_clk_domain.clock
-        gpu_clk_domain = SrcClockDomain(
-            clock=options.gpu_clock,
-            voltage_domain=VoltageDomain(voltage=options.gpu_voltage),
-        )
-        gpu_clock = gpu_clk_domain.clock
-        ruby_clk_domain = SrcClockDomain(
-            clock=options.ruby_clock,
-            voltage_domain=VoltageDomain(voltage=options.sys_voltage),
-        )
-        ruby_clock = ruby_clk_domain.clock
+        if options.chiplet_clock_domain:
+            cpu_clk_domain = SrcClockDomain(
+                clock=options.CPUClock,
+                voltage_domain=VoltageDomain(voltage=options.cpu_voltage),
+            )
+            gpu_clk_domain = SrcClockDomain(
+                clock=options.gpu_clock,
+                voltage_domain=VoltageDomain(voltage=options.gpu_voltage),
+            )
+            ruby_clk_domain = SrcClockDomain(
+                clock=options.ruby_clock,
+                voltage_domain=VoltageDomain(voltage=options.sys_voltage),
+            )
 
         # sequence: cpu_noi, gpu_noi, dir0_noi, dir1_noi, dir2_noi, dir3_noi, cpu_noc, gpu_noc
         routers = []
         for i in range(num_routers):
             router = Router(router_id=i)
-            if i == num_noi + self.label_cpu:
-                router.clk_domain = cpu_clk_domain
-            elif i == num_noi + self.label_gpu:
-                router.clk_domain = gpu_clk_domain
+            if options.chiplet_clock_domain:
+                if i == num_noi + self.label_cpu:
+                    router.clk_domain = cpu_clk_domain
+                elif i == num_noi + self.label_gpu:
+                    router.clk_domain = gpu_clk_domain
             routers.append(router)
         network.routers = routers
 
@@ -209,6 +182,11 @@ class ChipletTopo(BaseTopology):
                 ext_node=ext_node,
                 int_node=int_node,
             )
+            if options.chiplet_clock_domain:
+                for network_link in link_ext.network_links:
+                    network_link.clk_domain = cpu_clk_domain
+                for credit_link in link_ext.credit_links:
+                    credit_link.clk_domain = cpu_clk_domain
             self._printExtLink(link_ext_count, ext_node, int_node, latency=1)
             link_ext_count += 1
             ext_links.append(link_ext)
@@ -222,6 +200,11 @@ class ChipletTopo(BaseTopology):
                 ext_node=ext_node,
                 int_node=int_node,
             )
+            if options.chiplet_clock_domain:
+                for network_link in link_ext.network_links:
+                    network_link.clk_domain = gpu_clk_domain
+                for credit_link in link_ext.credit_links:
+                    credit_link.clk_domain = gpu_clk_domain
             self._printExtLink(link_ext_count, ext_node, int_node, latency=1)
             link_ext_count += 1
             ext_links.append(link_ext)
@@ -237,7 +220,8 @@ class ChipletTopo(BaseTopology):
             dst_node=dst_node,
             latency=latency,
         )
-        link_cpu_noi_noc.dst_cdc = True
+        if options.chiplet_cdc:
+            link_cpu_noi_noc.dst_cdc = True
         self._printIntLink(link_int_count, src_node, dst_node, latency)
         link_int_count += 1
         int_links.append(link_cpu_noi_noc)
@@ -251,7 +235,8 @@ class ChipletTopo(BaseTopology):
             dst_node=dst_node,
             latency=latency,
         )
-        link_cpu_noc_noi.src_cdc = True
+        if options.chiplet_cdc:
+            link_cpu_noc_noi.src_cdc = True
         self._printIntLink(link_int_count, src_node, dst_node, latency)
         link_int_count += 1
         int_links.append(link_cpu_noc_noi)
@@ -266,7 +251,8 @@ class ChipletTopo(BaseTopology):
             dst_node=dst_node,
             latency=latency,
         )
-        link_gpu_noi_noc.dst_cdc = True
+        if options.chiplet_cdc:
+            link_gpu_noi_noc.dst_cdc = True
         self._printIntLink(link_int_count, src_node, dst_node, latency)
         link_int_count += 1
         int_links.append(link_gpu_noi_noc)
@@ -280,7 +266,8 @@ class ChipletTopo(BaseTopology):
             dst_node=dst_node,
             latency=latency,
         )
-        link_gpu_noc_noi.src_cdc = True
+        if options.chiplet_cdc:
+            link_gpu_noc_noi.src_cdc = True
         self._printIntLink(link_int_count, src_node, dst_node, latency)
         link_int_count += 1
         int_links.append(link_gpu_noc_noi)

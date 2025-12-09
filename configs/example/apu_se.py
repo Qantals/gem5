@@ -440,16 +440,28 @@ parser.add_argument(
 
 # add by zyh: begin
 parser.add_argument(
+    "--chiplet-topo",
+    action="store_true",
+    default=False,
+    help="Use customed chiplet topology",
+)
+parser.add_argument(
     "--latency-path",
     type=str,
     default="",
     help="Floorplan latency profile with given config filepath",
 )
 parser.add_argument(
-    "--chiplet-topo",
+    "--chiplet-clock-domain",
     action="store_true",
     default=False,
-    help="Use customed chiplet topology",
+    help="Use customed chiplet topology with different clock domains",
+)
+parser.add_argument(
+    "--chiplet-cdc",
+    action="store_true",
+    default=False,
+    help="Use customed chiplet topology with Clock Domain Crossing",
 )
 # add by zyh: end
 

@@ -134,7 +134,7 @@ class CPCntrl(GPU_VIPER_CorePair_Controller, CntrlBase):
 
         self.ruby_system = ruby_system
         # add by zyh: begin
-        if options.chiplet_topo and hasattr(options, "CPUClock") and hasattr(options, "cpu_voltage"):
+        if options.chiplet_clock_domain and hasattr(options, "CPUClock") and hasattr(options, "cpu_voltage"):
             self.clk_domain = SrcClockDomain(
                 clock=options.CPUClock,
                 voltage_domain=VoltageDomain(voltage=options.cpu_voltage),
