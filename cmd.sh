@@ -80,3 +80,16 @@ configs/example/apu_se.py \
 # --disk-image /home/share/HDstorage/zyh/gem5_resource/x86-ubuntu-24.04-img \
 # --maxtime 10 \
 # > "${OUTPUT_DIR}/print.log" 2>&1 &
+
+
+
+
+
+# stdlib
+# ./build/X86/gem5.fast \
+# --outdir=m5out_stdlib/01-components1 \
+# materials/02-Using-gem5/01-stdlib/completed/01-components.py
+
+# from gem5.resources.resource import Resource, obtain_resource, BinaryResource
+# board.set_se_binary_workload(BinaryResource("gem5-resources/src/examples/matrix-multiply/matrix-multiply"))
+
