@@ -130,8 +130,7 @@ class ChipletTopo(BaseTopology):
         ext_links = []
 
         # connect between cpu noi and gpu noi
-        if latency_path:
-            print("*** link for CPU NoI and GPU NoI ***")
+        print("*** link for CPU NoI and GPU NoI ***")
         src_node=routers[self.label_cpu]
         dst_node=routers[self.label_gpu]
         latency=link_latency[self.label_cpu][self.label_gpu]
@@ -141,8 +140,7 @@ class ChipletTopo(BaseTopology):
             dst_node=dst_node,
             latency=latency,
         )
-        if latency_path:
-            self._printIntLink(link_int_count, src_node, dst_node, latency)
+        self._printIntLink(link_int_count, src_node, dst_node, latency)
         link_int_count += 1
         int_links.append(link_cpu_gpu)
 
@@ -155,14 +153,12 @@ class ChipletTopo(BaseTopology):
             dst_node=dst_node,
             latency=latency,
         )
-        if latency_path:
-            self._printIntLink(link_int_count, src_node, dst_node, latency)
+        self._printIntLink(link_int_count, src_node, dst_node, latency)
         link_int_count += 1
         int_links.append(link_gpu_cpu)
 
         # connect dir nodes
-        if latency_path:
-            print("*** link for dir NoI ***")
+        print("*** link for dir NoI ***")
         for i, node in enumerate(self.dir_nodes):
             ext_node = node
             int_node = routers[i + self.num_cores]
@@ -171,8 +167,7 @@ class ChipletTopo(BaseTopology):
                 ext_node=ext_node,
                 int_node=int_node,
             )
-            if latency_path:
-                self._printExtLink(link_ext_count, ext_node, int_node, latency=1)
+            self._printExtLink(link_ext_count, ext_node, int_node, latency=1)
             link_ext_count += 1
             ext_links.append(link_ext)
 
@@ -187,8 +182,7 @@ class ChipletTopo(BaseTopology):
                 dst_node=dst_node,
                 latency=latency,
             )
-            if latency_path:
-                self._printIntLink(link_int_count, src_node, dst_node, latency)
+            self._printIntLink(link_int_count, src_node, dst_node, latency)
             link_int_count += 1
             int_links.append(link_int_from)
 
@@ -201,14 +195,12 @@ class ChipletTopo(BaseTopology):
                 dst_node=dst_node,
                 latency=latency,
             )
-            if latency_path:
-                self._printIntLink(link_int_count, src_node, dst_node, latency)
+            self._printIntLink(link_int_count, src_node, dst_node, latency)
             link_int_count += 1
             int_links.append(link_int_to)
 
         # connect cpu noc nodes
-        if latency_path:
-            print("*** link for CPU NoC and GPU NoC ***")
+        print("*** link for CPU NoC and GPU NoC ***")
         for node in self.cpu_nodes:
             ext_node = node
             int_node = routers[num_noi + self.label_cpu]
@@ -217,8 +209,7 @@ class ChipletTopo(BaseTopology):
                 ext_node=ext_node,
                 int_node=int_node,
             )
-            if latency_path:
-                self._printExtLink(link_ext_count, ext_node, int_node, latency=1)
+            self._printExtLink(link_ext_count, ext_node, int_node, latency=1)
             link_ext_count += 1
             ext_links.append(link_ext)
 
@@ -231,14 +222,12 @@ class ChipletTopo(BaseTopology):
                 ext_node=ext_node,
                 int_node=int_node,
             )
-            if latency_path:
-                self._printExtLink(link_ext_count, ext_node, int_node, latency=1)
+            self._printExtLink(link_ext_count, ext_node, int_node, latency=1)
             link_ext_count += 1
             ext_links.append(link_ext)
 
         # connect cpu noc and noi
-        if latency_path:
-            print("*** link for CPU NoC to NoI and GPU NoC to NoI ***")
+        print("*** link for CPU NoC to NoI and GPU NoC to NoI ***")
         src_node=routers[self.label_cpu]
         dst_node=routers[num_noi + self.label_cpu]
         latency=1
@@ -249,8 +238,7 @@ class ChipletTopo(BaseTopology):
             latency=latency,
         )
         link_cpu_noi_noc.dst_cdc = True
-        if latency_path:
-            self._printIntLink(link_int_count, src_node, dst_node, latency)
+        self._printIntLink(link_int_count, src_node, dst_node, latency)
         link_int_count += 1
         int_links.append(link_cpu_noi_noc)
 
@@ -264,8 +252,7 @@ class ChipletTopo(BaseTopology):
             latency=latency,
         )
         link_cpu_noc_noi.src_cdc = True
-        if latency_path:
-            self._printIntLink(link_int_count, src_node, dst_node, latency)
+        self._printIntLink(link_int_count, src_node, dst_node, latency)
         link_int_count += 1
         int_links.append(link_cpu_noc_noi)
 
@@ -280,8 +267,7 @@ class ChipletTopo(BaseTopology):
             latency=latency,
         )
         link_gpu_noi_noc.dst_cdc = True
-        if latency_path:
-            self._printIntLink(link_int_count, src_node, dst_node, latency)
+        self._printIntLink(link_int_count, src_node, dst_node, latency)
         link_int_count += 1
         int_links.append(link_gpu_noi_noc)
 
@@ -295,13 +281,11 @@ class ChipletTopo(BaseTopology):
             latency=latency,
         )
         link_gpu_noc_noi.src_cdc = True
-        if latency_path:
-            self._printIntLink(link_int_count, src_node, dst_node, latency)
+        self._printIntLink(link_int_count, src_node, dst_node, latency)
         link_int_count += 1
         int_links.append(link_gpu_noc_noi)
 
         network.int_links = int_links
         network.ext_links = ext_links
 
-        if latency_path:
-            print("----------- chiplet latency info end ------------")
+        print("----------- chiplet latency info end ------------")
