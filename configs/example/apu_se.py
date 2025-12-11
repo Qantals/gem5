@@ -1082,7 +1082,9 @@ checkpoint_dir = None
 m5.instantiate(checkpoint_dir)
 
 # Map workload to this address space
-host_cpu.workload[0].map(0x10000000, 0x200000000, 4096)
+# modified by zyh: begin
+host_cpu.workload[0].map(0x10000000, 0x200000000, 65536)
+# modified by zyh: end
 
 if args.fast_forward:
     print("Switch at instruction count: %d" % cpu_list[0].max_insts_any_thread)
