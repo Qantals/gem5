@@ -1,4 +1,11 @@
-1. in `GPU_VIPER.py:132`: issue_latency with option `cpu_to_dir_latency` in line 430, 431
+1. in `GPU_VIPER.py:132`: issue_latency with option `cpu_to_dir_latency` and for gpu in line 430, 431
+    > But now I think it's OK since link latency is add to chiplet NoI, this `2dirlatency` refer to latency from cache to North Bridge (memory controller)
+2. in `GPU_VIPER.py:680`: config `options.mem_channels` is useless for Ruby and for GPU_VIPER, just used for no Ruby system.
+    > use `num_dirs` to substitute this function
+3. GPU_VIPER specifies a directory controller contains a L3 cache
+    > I think this L3 cache is commonly shared by both CPU and GPU, and its size is divided by `num_dirs`.  
+    > But now it's less accurate since we put L3 outside the chiplet with different frequency.  
+    > APU model is not well designed for HeteroGarnet.
 
 
 # apu_se.py
