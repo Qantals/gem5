@@ -1,12 +1,21 @@
 1. in `GPU_VIPER.py:132`: issue_latency with option `cpu_to_dir_latency` and for gpu in line 430, 431
-    > But now I think it's OK since link latency is add to chiplet NoI, this `2dirlatency` refer to latency from cache to North Bridge (memory controller)
+    - in `GPU_VIPER.py:447`: `l2_latency` is not used, `num_subcaches` is not used
+    - in `apu_se.py`: latencies from CU to Ruby: scale 50 cycles
+    - in `GPU_VIPER.py`: most latencies scale under 10 cycles, larger is TCC_latency (`tcc_cntrl.l2_response_latency`): set to 16 cycles, sm file is 20 cycles
+        - `gpu-to-dir-latency` is `tcc_cntrl.l2_request_latency` sm file is 50 cycles, in `GPU_VIPER.py` set to 120 cycles
+    - `cpu-to-dir-latency` sm file is 5 cycles, in `GPU_VIPER.py` set to 120 cycles, `issue_latency` of others (like SQC) is set to 1 in `GPU_VIPER.py`
+    > But now I think it's OK since link latency is add to chiplet NoI, this `2dirlatency` refer to latency from cache to North Bridge (memory controller)  
+    > But you have to consider scale size for latency values, 120 is far large than 10 cycles. Take frequency into consideration as well.
 2. in `GPU_VIPER.py:680`: config `options.mem_channels` is useless for Ruby and for GPU_VIPER, just used for no Ruby system.
     > use `num_dirs` to substitute this function
 3. GPU_VIPER specifies a directory controller contains a L3 cache
     > I think this L3 cache is commonly shared by both CPU and GPU, and its size is divided by `num_dirs`.  
     > But now it's less accurate since we put L3 outside the chiplet with different frequency.  
     > APU model is not well designed for HeteroGarnet.
-
+4. Ruby - Garnet models memory communication, but what about GPU command processor communication latency through `system.piobus`?
+    - Current I cannot handle this because there is no interface to adjust `pio` latency
+5. `gem5/src/dev/hsa/HSADevice.py` contains latency with Ticks!
+    - Able to adjust in `apu_se.py`
 
 # apu_se.py
 Seen expected results with `m5out_square_originTopo/garnet_memcfg_cpClk`
