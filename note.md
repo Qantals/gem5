@@ -1,4 +1,5 @@
 1. in `GPU_VIPER.py:132`: issue_latency with option `cpu_to_dir_latency` and for gpu in line 430, 431
+    - New answer: check paper "HeteroSync: A benchmark suite for fine-grained synchronization on tightly coupled GPUs" Table III
     - in `GPU_VIPER.py:447`: `l2_latency` is not used, `num_subcaches` is not used
     - in `apu_se.py`: latencies from CU to Ruby: scale 50 cycles
     - in `GPU_VIPER.py`: most latencies scale under 10 cycles, larger is TCC_latency (`tcc_cntrl.l2_response_latency`): set to 16 cycles, sm file is 20 cycles
@@ -16,6 +17,8 @@
     - Current I cannot handle this because there is no interface to adjust `pio` latency
 5. `gem5/src/dev/hsa/HSADevice.py` contains latency with Ticks!
     - Able to adjust in `apu_se.py`
+6. benchmark `gem5/gem5-resources/src/gpu/hip-samples/bin/stream` is invalid for cores <= 3 (endless loop) and cores >=4 both TimingCPU and O3CPU (even unmodified gem5)
+7. Useless options in `apu_se.py`: `--cpu-only-mode`, `--num-gpu-complexes`
 
 # apu_se.py
 Seen expected results with `m5out_square_originTopo/garnet_memcfg_cpClk`
