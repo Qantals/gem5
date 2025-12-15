@@ -16,11 +16,15 @@
 # -c gem5-resources/src/gpu/hip-samples/bin/stream \
 # -c gem5-resources/src/gpu/hip-samples/bin/unroll \
 
+# -c gem5-resources/src/examples/matrix-multiply/matrix-multiply \
+# -c gem5-resources/src/examples/matrix-multiply-omp/matrix-omp --options="1 4"\
+# --benchmark-root=splash2_benchmark/codes/kernels/fft -c FFT --options="-p4;-m12;-l6;-n65533" \
+
 # --num-compute-units 40 \
 # --sa-per-complex 10 \
 
 # apu_se.py
-OUTPUT_DIR=m5out_chiplet_pennant/
+OUTPUT_DIR=m5out_chiplet_freq/freq2.1.5
 mkdir -p "$OUTPUT_DIR"
 cp latency.txt "$OUTPUT_DIR"
 
@@ -31,7 +35,7 @@ configs/example/apu_se.py \
 -n 4 \
 --CPUClock 2GHz \
 --gpu-clock 1GHz \
---ruby-clock 2GHz \
+--ruby-clock 5GHz \
 --network garnet \
 --link-width-bits 64 \
 --chiplet-topo \
@@ -41,5 +45,5 @@ configs/example/apu_se.py \
 --mem-size 8GiB \
 --mem-type HBM_2000_4H_1x64 \
 --num-dirs 4 \
---benchmark-root=gem5-resources/src/gpu/pennant/build -c pennant --options="gem5-resources/src/gpu/pennant/test/noh/noh.pnt" \
+-c gem5-resources/src/gpu/square/bin/square \
 > "${OUTPUT_DIR}/print.log" 2>&1 &
