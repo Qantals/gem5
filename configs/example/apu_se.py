@@ -898,6 +898,16 @@ system.voltage_domain = VoltageDomain(voltage=args.sys_voltage)
 system.clk_domain = SrcClockDomain(
     clock=args.sys_clock, voltage_domain=system.voltage_domain
 )
+# add by zyh: begin
+system.cpu_voltage_domain = VoltageDomain(voltage=args.cpu_voltage)
+system.cpu_clk_domain = SrcClockDomain(
+    clock=args.CPUClock, voltage_domain=system.cpu_voltage_domain
+)
+system.gpu_voltage_domain = VoltageDomain(voltage=args.gpu_voltage)
+system.gpu_clk_domain = SrcClockDomain(
+    clock=args.gpu_clock, voltage_domain=system.gpu_voltage_domain
+)
+# add by zyh: end
 
 if fast_forward:
     have_kvm_support = "BaseKvmCPU" in globals()
