@@ -1116,9 +1116,12 @@ while True:
         print("breaking loop with checkpoint")
         break
     elif "GPU Kernel Completed" in exit_event.getCause():
-        print("GPU Kernel Completed dump and reset")
-        m5.stats.dump()
-        m5.stats.reset()
+        # modified by zyh: begin
+        print("GPU Kernel Completed")
+        # print("GPU Kernel Completed dump and reset")
+        # m5.stats.dump()
+        # m5.stats.reset()
+        # modified by zyh: end
     elif "GPU Blit Kernel Completed" in exit_event.getCause():
         print("GPU Blit Kernel Completed dump and reset")
         m5.stats.dump()

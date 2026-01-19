@@ -19,36 +19,44 @@ def find_target_folders(root_dir: str, folder_pattern) -> List[Path]:
     
     return target_folders
 
-def extract_values_from_stats(stats_file_path: Path, stats_num: int) -> Tuple[float, int]:
-    simSeconds_list = []
+def extract_values_from_stats(stats_file_path: Path):
+    list_simTicks = []
+    list_shaderActiveTicks = []
+    list_Bursts = []
     
-    pattern_simSeconds = re.compile(r"^simSeconds\s+(\d+\.\d+)\s+#.*$")
+    pattern_simTicks = re.compile(r"^simTicks\s+(\d+)\s+#.*$")
+    pattern_shaderActiveTicks = re.compile(r"^system\.cpu4\.shaderActiveTicks\s+(\d+)\s+#.*$")
+    pattern_readBursts = re.compile(r"^system\.mem_ctrls\d\.dram\.readBursts\s+(\d+)\s+#.*$")
+    pattern_writeBursts = re.compile(r"^system\.mem_ctrls\d\.dram\.writeBursts\s+(\d+)\s+#.*$")
 
-    try:
-        with open(stats_file_path, 'r') as f:
-            for line in f:
-                match_seconds = pattern_simSeconds.match(line)
-                if match_seconds:
-                    simSeconds_list.append(float(match_seconds.group(1)))
-                    # stop early if we've collected enough of both
-                    if len(simSeconds_list) >= stats_num:
-                        break
+    with open(stats_file_path, 'r') as f:
+        for line in f:
+            match_simTicks = pattern_simTicks.match(line)
+            match_shaderActiveTicks = pattern_shaderActiveTicks.match(line)
+            match_readBursts = pattern_readBursts.match(line)
+            match_writeBursts = pattern_writeBursts.match(line)
+            if match_simTicks:
+                list_simTicks.append(int(match_simTicks.group(1)))
+            elif match_shaderActiveTicks:
+                list_shaderActiveTicks.append(int(match_shaderActiveTicks.group(1)))
+            elif match_readBursts or match_writeBursts:
+                bursts_value = int(match_readBursts.group(1)) if match_readBursts else int(match_writeBursts.group(1))
+                list_Bursts.append(bursts_value)
 
-    except FileNotFoundError:
-        raise Exception(f"Error: The file {stats_file_path} was not found and will be skipped.")
-    except Exception as e:
-        raise Exception(f"Error reading {stats_file_path}: {e}. This folder will be skipped.")
+    simTicks = sum(list_simTicks) if list_simTicks else None
+    shaderActiveTicks = sum(list_shaderActiveTicks) if list_shaderActiveTicks else None
+    bursts = sum(list_Bursts) if list_Bursts else None
 
-    simSeconds = sum(simSeconds_list) if simSeconds_list else None
+    prop_gpu = shaderActiveTicks / simTicks
+    prop_cpu = 1 - prop_gpu
+    intv_dram = simTicks / bursts
 
-    return simSeconds
+    return prop_cpu, prop_gpu, intv_dram
 
 def main():
-    ROOT_SEARCH_DIR = 'm5out_square_freqFolder' 
-    OUTPUT_REPORT_FILE = os.path.join(ROOT_SEARCH_DIR, 'simSeconds_2_report.txt')
-    STATS_NUM = 2
-    # FOLDER_PATTERN = re.compile(r"m5out_freq21_latency\d{5}")
-    FOLDER_PATTERN = re.compile(r"m5out_.*")
+    ROOT_SEARCH_DIR = 'm5out_chiplet_freq' 
+    OUTPUT_REPORT_FILE = os.path.join(ROOT_SEARCH_DIR, 'proportions.txt')
+    FOLDER_PATTERN = re.compile(r".*")
 
     print(f"Starting search for target folders in: {Path(ROOT_SEARCH_DIR).resolve()}")
     
@@ -65,36 +73,38 @@ def main():
     results: List[Dict] = []
     for folder in target_folders:
         stats_file = folder / "stats.txt"
-        simSeconds = extract_values_from_stats(stats_file, STATS_NUM)
+        prop_cpu, prop_gpu, intv_dram = extract_values_from_stats(stats_file)
+
+        assert prop_cpu is not None and prop_gpu is not None and intv_dram is not None, \
+            f"Failed to extract necessary values from {stats_file}"
         
-        if simSeconds is not None:
-            results.append({
-                'folder_name': folder.name,
-                'simSeconds': simSeconds,
-            })
-        else:
-            print(f"Warning: Could not extract 'simSeconds' from {stats_file}. Skipping.")
+        results.append({
+            'folder_name': folder.name,
+            'prop_cpu': prop_cpu,
+            'prop_gpu': prop_gpu,
+            'intv_dram': intv_dram,
+        })
 
     if not results:
         print("No valid data could be processed from the found folders. Exiting.")
         return
 
     # Step 3: Sort the results by simSeconds in ascending order (low first)
-    results.sort(key=lambda x: x['simSeconds'], reverse=False)
+    results.sort(key=lambda x: x['prop_cpu'], reverse=False)
 
     # Step 4: Generate and write the report
     try:
         with open(OUTPUT_REPORT_FILE, 'w') as f:
             # Write a header
-            f.write("Gem5 Simulation simSeconds Report\n")
+            f.write("Gem5 Simulation proportion Report\n")
             f.write("=" * 40 + "\n")
-            f.write(f"{'Folder Name':<30} | {'simSeconds':<15}\n")
+            f.write(f"{'Folder Name':<30} | {'prop_cpu':<15} | {'prop_gpu':<15} | {'intv_dram':<15}\n")
             f.write("-" * 90 + "\n")
 
             # Write each result
             for res in results:
                 f.write(
-                    f"{res['folder_name']:<30} | {res['simSeconds']:<15.6f}\n"
+                    f"{res['folder_name']:<30} | {res['prop_cpu']:<15.6f} | {res['prop_gpu']:<15.6f} | {res['intv_dram']:<15.6f}\n"
                 )
         
         print(f"\nProcessing complete! Results have been saved to {OUTPUT_REPORT_FILE}")
