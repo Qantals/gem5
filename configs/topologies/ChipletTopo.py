@@ -96,6 +96,14 @@ class ChipletTopo(BaseTopology):
                     if s:
                         link_latency.append(list(map(int, s.split())))
             print("----------- chiplet latency info begin ------------")
+        elif options.latency_val:
+            idxs1 = [0, 0, 0, 1, 1]
+            idxs2 = [1, 2, 3, 4, 5]
+            link_latency = [[1 for _ in range(num_routers)] for _ in range(num_routers)]
+            latency_vals = list(map(int, options.latency_val.split(',')))
+            for i in range(5):
+                link_latency[idxs1[i]][idxs2[i]] = link_latency[idxs2[i]][idxs1[i]] = latency_vals[i]
+            print("----------- chiplet latency info begin ------------")
         else:
             link_latency = [[1 for _ in range(num_routers)] for _ in range(num_routers)]
 

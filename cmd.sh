@@ -23,8 +23,6 @@
 # --benchmark-root=gem5-resources/src/gpu/pannotia/bc/bin -c bc.gem5 --options="1k_128k.gr" \
 # --benchmark-root=gem5-resources/src/gpu/pannotia/color/bin -c color_max.gem5 --options="pannotia/dataset/color/ecology1.graph 1" \
 # --benchmark-root=gem5-resources/src/gpu/pannotia/color/bin -c color_maxmin.gem5 --options="pannotia/dataset/color/ecology1.graph 1" \
-# --benchmark-root=gem5-resources/src/gpu/pannotia/fw/bin -c fw_hip.gem5 --options="-f 1k_128k.gr -m usemmap" \
-# --benchmark-root=gem5-resources/src/gpu/pannotia/fw/bin -c fw_hip.gem5 --options="-f 1k_128k.gr -m default" \
 # --benchmark-root=gem5-resources/src/gpu/pannotia/fw/bin -c fw_hip.gem5 --options="-f pannotia/dataset/floydwarshall/256_16384.gr -m usemmap" \
 # --benchmark-root=gem5-resources/src/gpu/pannotia/fw/bin -c fw_hip.gem5 --options="-f pannotia/dataset/floydwarshall/256_16384.gr -m default" \
 # --benchmark-root=gem5-resources/src/gpu/pannotia/mis/bin -c mis_hip.gem5 --options="pannotia/dataset/mis/ecology1.graph 1" \
@@ -40,7 +38,7 @@
 # --maxtime 1 \
 
 # apu_se.py
-OUTPUT_DIR=m5out_midBenchmark/sssp_NW
+OUTPUT_DIR=m5out_movLatFixFreq_test/latency12345
 mkdir -p "$OUTPUT_DIR"
 cp latency.txt "$OUTPUT_DIR"
 
@@ -61,5 +59,5 @@ configs/example/apu_se.py \
 --mem-size 8GiB \
 --mem-type HBM_2000_4H_1x64 \
 --num-dirs 4 \
---benchmark-root=gem5-resources/src/gpu/pannotia/sssp/bin -c sssp.gem5 --options="pannotia/dataset/sssp/USA-road-d.NW.gr 0" \
+--benchmark-root=gem5-resources/src/gpu/pannotia/fw/bin -c fw_hip.gem5 --options="-f pannotia/dataset/floydwarshall/256_16384.gr -m default" \
 > "${OUTPUT_DIR}/print.log" 2>&1 &

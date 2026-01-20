@@ -463,6 +463,12 @@ parser.add_argument(
     default=False,
     help="Use customed chiplet topology with Clock Domain Crossing",
 )
+parser.add_argument(
+    "--latency-val",
+    type=str,
+    default="",
+    help="Floorplan latency profile values in string format",
+)
 # add by zyh: end
 
 Ruby.define_options(parser)
