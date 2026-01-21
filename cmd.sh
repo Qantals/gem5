@@ -38,22 +38,22 @@
 # --maxtime 1 \
 
 # apu_se.py
-OUTPUT_DIR=m5out_movLatFixFreq_test/latency12345
+OUTPUT_DIR=m5out_movLatFixFreq/latency41111
 mkdir -p "$OUTPUT_DIR"
-cp latency.txt "$OUTPUT_DIR"
+# cp latency.txt "$OUTPUT_DIR"
 
 ./build/VEGA_X86/gem5.fast \
 -d "$OUTPUT_DIR" \
 configs/example/apu_se.py \
 --cpu-type X86O3CPU \
 -n 4 \
---CPUClock 2GHz \
+--CPUClock 3GHz \
 --gpu-clock 1GHz \
---ruby-clock 5GHz \
+--ruby-clock 10GHz \
 --network garnet \
 --link-width-bits 64 \
 --chiplet-topo \
---latency-path latency.txt \
+--latency-val=4,1,1,1,1 \
 --chiplet-clock-domain \
 --chiplet-cdc \
 --mem-size 8GiB \
@@ -61,3 +61,5 @@ configs/example/apu_se.py \
 --num-dirs 4 \
 --benchmark-root=gem5-resources/src/gpu/pannotia/fw/bin -c fw_hip.gem5 --options="-f pannotia/dataset/floydwarshall/256_16384.gr -m default" \
 > "${OUTPUT_DIR}/print.log" 2>&1 &
+
+# --latency-path latency.txt \

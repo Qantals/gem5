@@ -22,23 +22,27 @@ def find_target_folders(root_dir: str, folder_pattern) -> List[Path]:
     return target_folders
 
 def extract_values_from_stats(stats_file_path: Path):
-    '''
-    Returns:
-        simSeconds in ms
-    '''
+
     simSeconds_list = []
+    simInsts_list = []
     
     pattern_simSeconds = re.compile(r"^simSeconds\s+(\d+.\d+)\s+#.*$")
+    pattern_simInsts = re.compile(r"^simInsts\s+(\d+)\s+#.*$")
 
     with open(stats_file_path, 'r') as f:
         for line in f:
             match_simSeconds = pattern_simSeconds.match(line)
+            match_simInsts = pattern_simInsts.match(line)
             if match_simSeconds:
                 simSeconds_list.append(float(match_simSeconds.group(1)))
+            elif match_simInsts:
+                simInsts_list.append(int(match_simInsts.group(1)))
 
-    ms = sum(simSeconds_list) * 1000 if simSeconds_list else None
+    seconds = sum(simSeconds_list) if simSeconds_list else None
+    insts = sum(simInsts_list) if simInsts_list else None
+    mips = insts / seconds / 1e6
 
-    return ms
+    return mips
 
 def extract_values_from_log(log_file_path: Path):
     '''
@@ -47,7 +51,7 @@ def extract_values_from_log(log_file_path: Path):
     '''
     result = {}
 
-    pattern_freq = re.compile(r"^command line:.*\s--CPUClock (\d+\.?\d*)GHz --gpu-clock (\d+\.?\d*)GHz --ruby-clock (\d+\.?\d*)GHz\s.*$")
+    pattern_freq = re.compile(r"^command line:.*\s--CPUClock (\d+\.?\d*)GHz --gpu-clock (\d+\.?\d*)GHz\s.*$")
     pattern_latency = re.compile(r"IntLink id: (\d+),.*?latency: (\d+)")
     target_ids = [0, 2, 4, 6, 8]
 
@@ -58,7 +62,6 @@ def extract_values_from_log(log_file_path: Path):
             if match_freq:
                 result['freq_cpu'] = float(match_freq.group(1))
                 result['freq_gpu'] = float(match_freq.group(2))
-                result['freq_ruby'] = float(match_freq.group(3))
             elif match_latency:
                 link_id = int(match_latency.group(1))
                 latency = int(match_latency.group(2))
@@ -96,11 +99,11 @@ def main():
     results: List[Dict] = []
     for folder in target_folders:
         stats_file = folder / "stats.txt"
-        ms = extract_values_from_stats(stats_file)
+        mips = extract_values_from_stats(stats_file)
         log_file = folder / "print.log"
         result = extract_values_from_log(log_file)
 
-        result['time'] = ms
+        result['mips'] = mips
         # result['folder_name'] = folder.name
 
         results.append(result)
@@ -109,7 +112,7 @@ def main():
         print("No valid data could be processed from the found folders. Exiting.")
         return
 
-    # Step 3: Sort the results by simSeconds in ascending order (low first)
+    # Step 3: Sort
     random.shuffle(results)
     n = len(results)
     train_end = int(n * RATIO_TRAIN)
@@ -117,7 +120,7 @@ def main():
     train = results[:train_end]
     valid = results[train_end:valid_end]
     test = results[valid_end:]
-    results.sort(key=lambda x: x['time'], reverse=False)
+    results.sort(key=lambda x: x['mips'], reverse=False)
 
     # Step 4: Generate and write
     files = [OUTPUT_RESULTS_FILE, OUTPUT_TRAIN_FILE, OUTPUT_VALID_FILE, OUTPUT_TEST_FILE]

@@ -36,7 +36,6 @@ def load_exist_seq(results_file):
             seq = (
                 float(row['freq_cpu']),
                 float(row['freq_gpu']),
-                float(row['freq_ruby']),
                 int(row['latency_0']),
                 int(row['latency_1']),
                 int(row['latency_2']),
@@ -57,11 +56,10 @@ def shuffle_seq(num_gen, lat_min, lat_max, results_file):
 
     while len(generated) < num_gen and tries < max_tries:
         # freq = (
-        #     random.choice([1.0, 1.5, 2.0, 2.5, 3.0]),
-        #     random.choice([0.5, 1.0, 1.5, 2.0]),
+        #     random.choice([1.5, 2.0, 2.5, 3.0, 3.5, 4.0]),
         #     random.choice([0.5, 1.0, 1.5, 2.0]),
         # )
-        freq = (2.0, 1.0, 5.0)
+        freq = (3.0, 1.0)
         latency = tuple(random.randint(lat_min, lat_max) for _ in range(5))
         candidate = tuple(freq + latency)
         if candidate not in existing and candidate not in generated:
@@ -78,8 +76,8 @@ def run_gem5(input_seqs, output_dir_parent, max_workers):
     def run_single(seq):
         freq_cpu = str(seq[0])
         freq_gpu = str(seq[1])
-        freq_ruby = str(seq[2])
-        latency_str = ''.join(str(x) for x in seq[3:])
+        freq_ruby = '10'
+        latency_str = ''.join(str(x) for x in seq[2:])
         output_dir = output_dir_parent / f"latency{latency_str}"
         os.makedirs(output_dir, exist_ok=True)
 
@@ -95,7 +93,7 @@ def run_gem5(input_seqs, output_dir_parent, max_workers):
             '--network', 'garnet',
             '--link-width-bits', '64',
             '--chiplet-topo',
-            '--latency-val={}'.format(','.join(str(x) for x in seq[3:])),
+            '--latency-val={}'.format(','.join(str(x) for x in seq[2:])),
             '--chiplet-clock-domain',
             '--chiplet-cdc',
             '--mem-size', '8GiB',
@@ -131,10 +129,10 @@ def main():
 
     output_dir = Path('m5out_movLatFixFreq')
     results_file = output_dir / 'results.csv'
-    num_gen_latency = 100
+    num_gen_latency = 300
     lat_min, lat_max = 1, 7
     generated = shuffle_seq(num_gen_latency, lat_min, lat_max, results_file)
-    run_gem5(generated, output_dir, 6)
+    run_gem5(generated, output_dir, 8)
 
 
 if __name__ == "__main__":

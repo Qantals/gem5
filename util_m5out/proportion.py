@@ -54,9 +54,9 @@ def extract_values_from_stats(stats_file_path: Path):
     return prop_cpu, prop_gpu, intv_dram
 
 def main():
-    ROOT_SEARCH_DIR = 'm5out_chiplet_freq' 
+    ROOT_SEARCH_DIR = 'm5out_movLatFixFreq' 
     OUTPUT_REPORT_FILE = os.path.join(ROOT_SEARCH_DIR, 'proportions.txt')
-    FOLDER_PATTERN = re.compile(r".*")
+    FOLDER_PATTERN = re.compile(r"latency.*")
 
     print(f"Starting search for target folders in: {Path(ROOT_SEARCH_DIR).resolve()}")
     
