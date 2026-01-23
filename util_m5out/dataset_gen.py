@@ -55,11 +55,10 @@ def shuffle_seq(num_gen, lat_min, lat_max, results_file):
     max_tries = num_gen * 100
 
     while len(generated) < num_gen and tries < max_tries:
-        # freq = (
-        #     random.choice([1.5, 2.0, 2.5, 3.0, 3.5, 4.0]),
-        #     random.choice([0.5, 1.0, 1.5, 2.0]),
-        # )
-        freq = (3.0, 1.0)
+        freq = (
+            random.choice([1.5, 2.0, 2.5, 3.0, 3.5, 4.0]),
+            random.choice([0.5, 1.0, 1.5, 2.0]),
+        )
         latency = tuple(random.randint(lat_min, lat_max) for _ in range(5))
         candidate = tuple(freq + latency)
         if candidate not in existing and candidate not in generated:
@@ -116,7 +115,10 @@ def run_gem5(input_seqs, output_dir_parent, max_workers):
         cmd_docker += cmd_gem5
 
         with open(f"{output_dir}/print.log", "w") as log_file:
-            subprocess.run(cmd_docker, stdout=log_file, stderr=subprocess.STDOUT)
+            try:
+                subprocess.run(cmd_docker, stdout=log_file, stderr=subprocess.STDOUT, check=True)
+            except subprocess.CalledProcessError as e:
+                print(f"Error running gem5 for seq {seq}: {e}")
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         executor.map(run_single, input_seqs)
@@ -127,12 +129,12 @@ def main():
     # latency_file = 'latency.txt'  # Path to the latency file
     # overwrite_latency(latency_list, latency_file)
 
-    output_dir = Path('m5out_movLatFixFreq')
+    output_dir = Path('m5out_movLatMovFreq')
     results_file = output_dir / 'results.csv'
-    num_gen_latency = 300
+    num_gen_latency = 50
     lat_min, lat_max = 1, 7
     generated = shuffle_seq(num_gen_latency, lat_min, lat_max, results_file)
-    run_gem5(generated, output_dir, 8)
+    run_gem5(generated, output_dir, 10)
 
 
 if __name__ == "__main__":
