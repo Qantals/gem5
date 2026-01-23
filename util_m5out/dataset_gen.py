@@ -77,7 +77,7 @@ def run_gem5(input_seqs, output_dir_parent, max_workers):
         freq_gpu = str(seq[1])
         freq_ruby = '10'
         latency_str = ''.join(str(x) for x in seq[2:])
-        output_dir = output_dir_parent / f"latency{latency_str}"
+        output_dir = output_dir_parent / f"freq{freq_cpu:.1}_{freq_gpu:.1}lat{latency_str}"
         os.makedirs(output_dir, exist_ok=True)
 
         cmd_gem5 = [

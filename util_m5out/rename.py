@@ -73,23 +73,15 @@ def extract_values_from_log(log_file_path: Path):
                 latency = int(match_latency.group(2))
                 if link_id in target_ids:
                     result[f'latency_{link_id // 2}'] = latency
+    
+    result['latency_str'] = ''.join(str(result[f'latency_{i}']) for i in range(len(target_ids)))
 
     return result
 
 
 def main():
-    ROOT_SEARCH_DIR = 'm5out_movLatFixFreq' 
-    FOLDER_PATTERN = re.compile(r"latency.*|freq.*")
-    perf_unit = 'ms'
-
-    IS_SPLIT_DATASET = False
-    OUTPUT_RESULTS_FILE = os.path.join(ROOT_SEARCH_DIR, 'results.csv')
-    OUTPUT_TRAIN_FILE = os.path.join(ROOT_SEARCH_DIR, 'train.csv')
-    OUTPUT_VALID_FILE = os.path.join(ROOT_SEARCH_DIR, 'valid.csv')
-    OUTPUT_TEST_FILE = os.path.join(ROOT_SEARCH_DIR, 'test.csv')
-
-    RATIO_TRAIN = 0.7
-    RATIO_VALID = 0.15
+    ROOT_SEARCH_DIR = 'm5out_movLatMovFreq' 
+    FOLDER_PATTERN = re.compile(r"latency.*|frequency.*")
 
     print(f"Starting search for target folders in: {Path(ROOT_SEARCH_DIR).resolve()}")
     
@@ -102,50 +94,27 @@ def main():
 
     print(f"Found {len(target_folders)} matching folders. Processing...")
 
-    # Step 2: Extract data and compute IPS for each folder
+    # Step 2: Extract data
     results: List[Dict] = []
     for folder in target_folders:
-        stats_file = folder / "stats.txt"
-        perf = extract_values_from_stats(stats_file, perf_unit)
         log_file = folder / "print.log"
         result = extract_values_from_log(log_file)
-
-        result[perf_unit] = perf
-        # result['folder_name'] = folder.name
-
+        result['folder_name'] = folder.name
         results.append(result)
 
-    if not results:
-        print("No valid data could be processed from the found folders. Exiting.")
-        return
+    # rename folders: 'freq{freq_cpu:.1}_{freq_gpu:.1}lat{latency_str}'
+    for result in results:
+        old_folder_path = Path(ROOT_SEARCH_DIR) / result['folder_name']
+        new_folder_name = (
+            f"freq{result['freq_cpu']:.1f}_{result['freq_gpu']:.1f}lat{result['latency_str']}"
+        )
+        new_folder_path = Path(ROOT_SEARCH_DIR) / new_folder_name
+        if not new_folder_path.exists():
+            # print(f"Renaming {old_folder_path} -> {new_folder_path}")
+            old_folder_path.rename(new_folder_path)
+        else:
+            print(f"Target folder {new_folder_path} already exists. Skipping.")
 
-    # Step 3: Sort
-    random.shuffle(results)
-    n = len(results)
-    train_end = int(n * RATIO_TRAIN)
-    valid_end = train_end + int(n * RATIO_VALID)
-    train = results[:train_end]
-    valid = results[train_end:valid_end]
-    test = results[valid_end:]
-    if perf_unit == 'mips':
-        is_reverse = False
-    elif perf_unit == 'ms':
-        is_reverse = True
-    else:
-        raise ValueError(f"Unsupported performance unit: {perf_unit}")
-    results.sort(key=lambda x: x[perf_unit], reverse=is_reverse)
-
-    # Step 4: Generate and write
-    files = [OUTPUT_RESULTS_FILE, OUTPUT_TRAIN_FILE, OUTPUT_VALID_FILE, OUTPUT_TEST_FILE]
-    datasets = [results, train, valid, test]
-    for i in range(4):
-        if not IS_SPLIT_DATASET and i > 0:
-            break
-        with open(files[i], 'w') as f:
-            cw = csv.DictWriter(f, fieldnames=results[0].keys())
-            cw.writeheader()
-            cw.writerows(datasets[i])
-        print(f"\nProcessing complete! Results have been saved to {files[i]}")
 
 
 if __name__ == "__main__":
