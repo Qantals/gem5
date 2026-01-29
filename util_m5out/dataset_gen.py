@@ -55,10 +55,11 @@ def shuffle_seq(num_gen, lat_min, lat_max, results_file):
     max_tries = num_gen * 100
 
     while len(generated) < num_gen and tries < max_tries:
-        freq = (
-            random.choice([1.5, 2.0, 2.5, 3.0, 3.5, 4.0]),
-            random.choice([0.5, 1.0, 1.5, 2.0]),
-        )
+        # freq = (
+        #     random.choice([1.5, 2.0, 2.5, 3.0, 3.5, 4.0]),
+        #     random.choice([0.5, 1.0, 1.5, 2.0]),
+        # )
+        freq = (2.5, 1.0)
         latency = tuple(random.randint(lat_min, lat_max) for _ in range(5))
         candidate = tuple(freq + latency)
         if candidate not in existing and candidate not in generated:
@@ -71,13 +72,27 @@ def shuffle_seq(num_gen, lat_min, lat_max, results_file):
     return generated
 
 
-def run_gem5(input_seqs, output_dir_parent, max_workers):
+def interpolation_seq(lat_min, lat_max, lat_step, lat_num, results_file):
+    existing = load_exist_seq(results_file)
+    generated = set()
+    for idx_lat_change in range(lat_num):
+        for lat_value in range(lat_min, lat_max + 1, lat_step):
+            freq = (2.5, 1.0)
+            latency = tuple(lat_value if idx_lat == idx_lat_change else lat_min for idx_lat in range(lat_num))
+            candidate = tuple(freq + latency)
+            if candidate not in existing and candidate not in generated:
+                generated.add(candidate)
+
+    return generated
+
+
+def run_gem5(input_seqs, freq_num, output_dir_parent, max_workers):
     def run_single(seq):
         freq_cpu = str(seq[0])
         freq_gpu = str(seq[1])
-        freq_ruby = '10'
-        latency_str = ''.join(str(x) for x in seq[2:])
-        output_dir = output_dir_parent / f"freq{freq_cpu:.1}_{freq_gpu:.1}lat{latency_str}"
+        freq_ruby = '3.0'
+        latency_str = '-'.join(str(x) for x in seq[freq_num:])
+        output_dir = output_dir_parent / f"freq{freq_cpu:.3}-{freq_gpu:.3}-{freq_ruby:.3}lat{latency_str}"
         os.makedirs(output_dir, exist_ok=True)
 
         cmd_gem5 = [
@@ -92,7 +107,7 @@ def run_gem5(input_seqs, output_dir_parent, max_workers):
             '--network', 'garnet',
             '--link-width-bits', '64',
             '--chiplet-topo',
-            '--latency-val={}'.format(','.join(str(x) for x in seq[2:])),
+            '--latency-val={}'.format(','.join(str(x) for x in seq[freq_num:])),
             '--chiplet-clock-domain',
             '--chiplet-cdc',
             '--mem-size', '8GiB',
@@ -129,12 +144,17 @@ def main():
     # latency_file = 'latency.txt'  # Path to the latency file
     # overwrite_latency(latency_list, latency_file)
 
-    output_dir = Path('m5out_movLatMovFreq')
+    output_dir = Path('m5out_movLatFixFreq')
     results_file = output_dir / 'results.csv'
     num_gen_latency = 50
-    lat_min, lat_max = 1, 7
-    generated = shuffle_seq(num_gen_latency, lat_min, lat_max, results_file)
-    run_gem5(generated, output_dir, 10)
+    lat_min, lat_max = 1, 15
+    lat_step = 5
+    lat_num = 5
+    freq_num = 2
+    # generated = shuffle_seq(num_gen_latency, lat_min, lat_max, results_file)
+    generated = interpolation_seq(lat_min, lat_max, lat_step, lat_num, results_file)
+    # print(generated)
+    run_gem5(generated, freq_num, output_dir, 10)
 
 
 if __name__ == "__main__":

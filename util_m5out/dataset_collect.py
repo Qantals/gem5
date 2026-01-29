@@ -57,7 +57,7 @@ def extract_values_from_log(log_file_path: Path):
     '''
     result = {}
 
-    pattern_freq = re.compile(r"^command line:.*\s--CPUClock (\d+\.?\d*)GHz --gpu-clock (\d+\.?\d*)GHz\s.*$")
+    pattern_freq = re.compile(r"^command line:.*\s--CPUClock (\d+\.?\d*)GHz --gpu-clock (\d+\.?\d*)GHz --ruby-clock (\d+\.?\d*)GHz\s.*$")
     pattern_latency = re.compile(r"IntLink id: (\d+),.*?latency: (\d+)")
     target_ids = [0, 2, 4, 6, 8]
 
@@ -68,6 +68,7 @@ def extract_values_from_log(log_file_path: Path):
             if match_freq:
                 result['freq_cpu'] = float(match_freq.group(1))
                 result['freq_gpu'] = float(match_freq.group(2))
+                # result['freq_ruby'] = float(match_freq.group(3))
             elif match_latency:
                 link_id = int(match_latency.group(1))
                 latency = int(match_latency.group(2))
@@ -78,8 +79,8 @@ def extract_values_from_log(log_file_path: Path):
 
 
 def main():
-    ROOT_SEARCH_DIR = 'm5out_movLatFixFreq' 
-    FOLDER_PATTERN = re.compile(r"latency.*|freq.*")
+    ROOT_SEARCH_DIR = 'm5out_movLatFixFreq'
+    FOLDER_PATTERN = re.compile(r"freq.*")
     perf_unit = 'ms'
 
     IS_SPLIT_DATASET = False

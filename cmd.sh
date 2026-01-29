@@ -38,7 +38,7 @@
 # --maxtime 1 \
 
 # apu_se.py
-OUTPUT_DIR=m5out_movLatFixFreq/latency41111
+OUTPUT_DIR=m5out_fixLatency/freq2.5-1.0-3.0lat7-7-7-7-7
 mkdir -p "$OUTPUT_DIR"
 # cp latency.txt "$OUTPUT_DIR"
 
@@ -47,13 +47,13 @@ mkdir -p "$OUTPUT_DIR"
 configs/example/apu_se.py \
 --cpu-type X86O3CPU \
 -n 4 \
---CPUClock 3GHz \
---gpu-clock 1GHz \
---ruby-clock 10GHz \
+--CPUClock 2.5GHz \
+--gpu-clock 1.0GHz \
+--ruby-clock 3.0GHz \
 --network garnet \
 --link-width-bits 64 \
 --chiplet-topo \
---latency-val=4,1,1,1,1 \
+--latency-val=7,7,7,7,7 \
 --chiplet-clock-domain \
 --chiplet-cdc \
 --mem-size 8GiB \
