@@ -72,13 +72,26 @@ def shuffle_seq(num_gen, lat_min, lat_max, results_file):
     return generated
 
 
-def interpolation_seq(lat_min, lat_max, lat_step, lat_num, results_file):
+def interpolation_lat(lat_min, lat_max, lat_step, lat_num, results_file):
     existing = load_exist_seq(results_file)
     generated = set()
     for idx_lat_change in range(lat_num):
         for lat_value in range(lat_min, lat_max + 1, lat_step):
             freq = (2.5, 1.0)
             latency = tuple(lat_value if idx_lat == idx_lat_change else lat_min for idx_lat in range(lat_num))
+            candidate = tuple(freq + latency)
+            if candidate not in existing and candidate not in generated:
+                generated.add(candidate)
+
+    return generated
+
+def interpolation_freq(freqs_cpu, freqs_gpu, lat_min, lat_num, results_file):
+    existing = load_exist_seq(results_file)
+    generated = set()
+    for freq_cpu in freqs_cpu:
+        for freq_gpu in freqs_gpu:
+            freq = (freq_cpu, freq_gpu)
+            latency = tuple(lat_min for _ in range(lat_num))
             candidate = tuple(freq + latency)
             if candidate not in existing and candidate not in generated:
                 generated.add(candidate)
@@ -144,15 +157,18 @@ def main():
     # latency_file = 'latency.txt'  # Path to the latency file
     # overwrite_latency(latency_list, latency_file)
 
-    output_dir = Path('m5out_movLatFixFreq')
+    output_dir = Path('m5out_fixLatMovFreq')
     results_file = output_dir / 'results.csv'
-    num_gen_latency = 50
+    num_gen_latency = 100
     lat_min, lat_max = 1, 15
     lat_step = 5
     lat_num = 5
     freq_num = 2
+    freqs_cpu = (1.5, 2.0, 2.5, 3.0, 3.5, 4.0)
+    freqs_gpu = (0.5, 1.0, 1.5, 2.0)
     # generated = shuffle_seq(num_gen_latency, lat_min, lat_max, results_file)
-    generated = interpolation_seq(lat_min, lat_max, lat_step, lat_num, results_file)
+    # generated = interpolation_lat(lat_min, lat_max, lat_step, lat_num, results_file)
+    generated = interpolation_freq(freqs_cpu, freqs_gpu, lat_min, lat_num, results_file)
     # print(generated)
     run_gem5(generated, freq_num, output_dir, 10)
 

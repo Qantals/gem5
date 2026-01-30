@@ -38,7 +38,7 @@
 # --maxtime 1 \
 
 # apu_se.py
-OUTPUT_DIR=m5out_fixLatency/freq2.5-1.0-3.0lat7-7-7-7-7
+OUTPUT_DIR=m5out_fixLatency/freq2.5-1.0-3.0lat11-11-11-11-11
 mkdir -p "$OUTPUT_DIR"
 # cp latency.txt "$OUTPUT_DIR"
 
@@ -53,7 +53,7 @@ configs/example/apu_se.py \
 --network garnet \
 --link-width-bits 64 \
 --chiplet-topo \
---latency-val=7,7,7,7,7 \
+--latency-val=11,11,11,11,11 \
 --chiplet-clock-domain \
 --chiplet-cdc \
 --mem-size 8GiB \
