@@ -68,7 +68,7 @@ def extract_values_from_log(log_file_path: Path):
             if match_freq:
                 result['freq_cpu'] = float(match_freq.group(1))
                 result['freq_gpu'] = float(match_freq.group(2))
-                # result['freq_ruby'] = float(match_freq.group(3))
+                result['freq_ruby'] = float(match_freq.group(3))
             elif match_latency:
                 link_id = int(match_latency.group(1))
                 latency = int(match_latency.group(2))

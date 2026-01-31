@@ -6,22 +6,7 @@ import random
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-
-import numpy as np
-
-
-def overwrite_latency(latency_seq, latency_file):
-    return
-    idxs1 = [0, 0, 0, 1, 1]
-    idxs2 = [1, 2, 3, 4, 5]
-    assert len(latency_seq) == len(idxs1) == len(idxs2)
-
-    with open(latency_file, 'r') as f:
-        latencies = np.loadtxt(f, dtype=int)
-    for i in range(len(latency_seq)):
-        latencies[idxs1[i]][idxs2[i]] = latencies[idxs2[i]][idxs1[i]] = latency_seq[i]
-    with open(latency_file, 'w') as f:
-        np.savetxt(f, latencies, fmt='%d')
+import itertools
 
 
 def load_exist_seq(results_file):
@@ -36,6 +21,7 @@ def load_exist_seq(results_file):
             seq = (
                 float(row['freq_cpu']),
                 float(row['freq_gpu']),
+                float(row['freq_ruby']),
                 int(row['latency_0']),
                 int(row['latency_1']),
                 int(row['latency_2']),
@@ -48,6 +34,7 @@ def load_exist_seq(results_file):
 
 
 def shuffle_seq(num_gen, lat_min, lat_max, results_file):
+    return
 
     existing = load_exist_seq(results_file)
     generated = set()
@@ -72,29 +59,19 @@ def shuffle_seq(num_gen, lat_min, lat_max, results_file):
     return generated
 
 
-def interpolation_lat(lat_min, lat_max, lat_step, lat_num, results_file):
-    existing = load_exist_seq(results_file)
-    generated = set()
-    for idx_lat_change in range(lat_num):
-        for lat_value in range(lat_min, lat_max + 1, lat_step):
-            freq = (2.5, 1.0)
-            latency = tuple(lat_value if idx_lat == idx_lat_change else lat_min for idx_lat in range(lat_num))
-            candidate = tuple(freq + latency)
-            if candidate not in existing and candidate not in generated:
-                generated.add(candidate)
+def interpolation_lat(lat_min, lat_max, lat_step, lat_num, freq, results_file):
 
-    return generated
-
-def interpolation_freq(freqs_cpu, freqs_gpu, lat_min, lat_num, results_file):
-    existing = load_exist_seq(results_file)
+    gen_existing = load_exist_seq(results_file)
     generated = set()
-    for freq_cpu in freqs_cpu:
-        for freq_gpu in freqs_gpu:
-            freq = (freq_cpu, freq_gpu)
-            latency = tuple(lat_min for _ in range(lat_num))
-            candidate = tuple(freq + latency)
-            if candidate not in existing and candidate not in generated:
-                generated.add(candidate)
+    lat_candidates = list(range(lat_min, lat_max + 1, lat_step))
+    if lat_candidates[-1] != lat_max:
+        lat_candidates.append(lat_max)
+    latencies = list(itertools.product(lat_candidates, repeat=lat_num))
+
+    for latency in latencies:
+        gen_candidate = tuple(freq + latency)
+        if gen_candidate not in gen_existing and gen_candidate not in generated:
+            generated.add(gen_candidate)
 
     return generated
 
@@ -103,9 +80,10 @@ def run_gem5(input_seqs, freq_num, output_dir_parent, max_workers):
     def run_single(seq):
         freq_cpu = str(seq[0])
         freq_gpu = str(seq[1])
-        freq_ruby = '3.0'
-        latency_str = '-'.join(str(x) for x in seq[freq_num:])
-        output_dir = output_dir_parent / f"freq{freq_cpu:.3}-{freq_gpu:.3}-{freq_ruby:.3}lat{latency_str}"
+        freq_ruby = str(seq[2])
+        latency_str_dir = '-'.join(str(x) for x in seq[freq_num:])
+        latency_str_cmd = latency_str_dir.replace('-', ',')
+        output_dir = str(output_dir_parent / f"freq{freq_cpu}-{freq_gpu}-{freq_ruby}lat{latency_str_dir}")
         os.makedirs(output_dir, exist_ok=True)
 
         cmd_gem5 = [
@@ -120,7 +98,7 @@ def run_gem5(input_seqs, freq_num, output_dir_parent, max_workers):
             '--network', 'garnet',
             '--link-width-bits', '64',
             '--chiplet-topo',
-            '--latency-val={}'.format(','.join(str(x) for x in seq[freq_num:])),
+            '--latency-val={}'.format(latency_str_cmd),
             '--chiplet-clock-domain',
             '--chiplet-cdc',
             '--mem-size', '8GiB',
@@ -133,8 +111,9 @@ def run_gem5(input_seqs, freq_num, output_dir_parent, max_workers):
 
         cmd_docker = [
             "docker", "run", "--rm",
-            "-v", f"{os.path.expanduser('~')}/.cache:{os.path.expanduser('~')}/.cache",
-            "-v", f"/home/share/HDstorage/{os.environ.get('USER')}:/home/share/HDstorage/{os.environ.get('USER')}",
+            # "-v", f"{os.path.expanduser('~')}/.cache:{os.path.expanduser('~')}/.cache",
+            # "-v", f"/home/share/HDstorage/{os.environ.get('USER')}:/home/share/HDstorage/{os.environ.get('USER')}",
+            "-v", f"{os.path.expanduser('~')}/Documents:{os.path.expanduser('~')}/Documents",
             "--user", f"{os.getuid()}:{os.getgid()}",
             "-e", "HOME",
             "-w", str(Path.cwd()),
@@ -153,23 +132,20 @@ def run_gem5(input_seqs, freq_num, output_dir_parent, max_workers):
 
 
 def main():
-    # latency_list = [10, 20, 30, 40, 50]  # Example latencies to overwrite
-    # latency_file = 'latency.txt'  # Path to the latency file
-    # overwrite_latency(latency_list, latency_file)
 
-    output_dir = Path('m5out_fixLatMovFreq')
+    output_dir = Path('m5out_movLatFixFreq')
     results_file = output_dir / 'results.csv'
     num_gen_latency = 100
     lat_min, lat_max = 1, 15
-    lat_step = 5
+    lat_step = 14
     lat_num = 5
-    freq_num = 2
-    freqs_cpu = (1.5, 2.0, 2.5, 3.0, 3.5, 4.0)
-    freqs_gpu = (0.5, 1.0, 1.5, 2.0)
+    freq_num = 3
+    freq = (2.5, 1.0, 3.0)
+
     # generated = shuffle_seq(num_gen_latency, lat_min, lat_max, results_file)
-    # generated = interpolation_lat(lat_min, lat_max, lat_step, lat_num, results_file)
-    generated = interpolation_freq(freqs_cpu, freqs_gpu, lat_min, lat_num, results_file)
-    # print(generated)
+    generated = interpolation_lat(lat_min, lat_max, lat_step, lat_num, freq, results_file)
+
+    print(f"len: {len(generated)}\n generated: {generated}")
     run_gem5(generated, freq_num, output_dir, 10)
 
 
