@@ -15,18 +15,18 @@ def load_exist_seq(results_file):
         print(f"results_file does not exist. Make dataset collection first?")
         return seqs_exist
 
-    with open(results_file, 'r') as f:
+    with open(results_file, "r") as f:
         cr = csv.DictReader(f)
         for row in cr:
             seq = (
-                float(row['freq_cpu']),
-                float(row['freq_gpu']),
-                float(row['freq_ruby']),
-                int(row['latency_0']),
-                int(row['latency_1']),
-                int(row['latency_2']),
-                int(row['latency_3']),
-                int(row['latency_4']),
+                float(row["freq_cpu"]),
+                float(row["freq_gpu"]),
+                float(row["freq_ruby"]),
+                int(row["latency_0"]),
+                int(row["latency_1"]),
+                int(row["latency_2"]),
+                int(row["latency_3"]),
+                int(row["latency_4"]),
             )
             seqs_exist.add(seq)
 
@@ -54,7 +54,9 @@ def shuffle_seq(num_gen, lat_min, lat_max, results_file):
         tries += 1
 
     if len(generated) < num_gen:
-        print(f"Warning: Only generated {len(generated)} unique lists after {tries} tries.")
+        print(
+            f"Warning: Only generated {len(generated)} unique lists after {tries} tries."
+        )
 
     return generated
 
@@ -70,7 +72,10 @@ def interpolation_lat(lat_min, lat_max, lat_step, lat_num, freq, results_file):
 
     for latency in latencies:
         gen_candidate = tuple(freq + latency)
-        if gen_candidate not in gen_existing and gen_candidate not in generated:
+        if (
+            gen_candidate not in gen_existing
+            and gen_candidate not in generated
+        ):
             generated.add(gen_candidate)
 
     return generated
@@ -81,49 +86,75 @@ def run_gem5(input_seqs, freq_num, output_dir_parent, max_workers):
         freq_cpu = str(seq[0])
         freq_gpu = str(seq[1])
         freq_ruby = str(seq[2])
-        latency_str_dir = '-'.join(str(x) for x in seq[freq_num:])
-        latency_str_cmd = latency_str_dir.replace('-', ',')
-        output_dir = str(output_dir_parent / f"freq{freq_cpu}-{freq_gpu}-{freq_ruby}lat{latency_str_dir}")
+        latency_str_dir = "-".join(str(x) for x in seq[freq_num:])
+        latency_str_cmd = latency_str_dir.replace("-", ",")
+        output_dir = str(
+            output_dir_parent
+            / f"freq{freq_cpu}-{freq_gpu}-{freq_ruby}lat{latency_str_dir}"
+        )
         os.makedirs(output_dir, exist_ok=True)
 
         cmd_gem5 = [
-            './build/VEGA_X86/gem5.fast',
-            '-d', output_dir,
-            'configs/example/apu_se.py',
-            '--cpu-type', 'X86O3CPU',
-            '-n', '4',
-            '--CPUClock', f'{freq_cpu}GHz',
-            '--gpu-clock', f'{freq_gpu}GHz',
-            '--ruby-clock', f'{freq_ruby}GHz',
-            '--network', 'garnet',
-            '--link-width-bits', '64',
-            '--chiplet-topo',
-            '--latency-val={}'.format(latency_str_cmd),
-            '--chiplet-clock-domain',
-            '--chiplet-cdc',
-            '--mem-size', '8GiB',
-            '--mem-type', 'HBM_2000_4H_1x64',
-            '--num-dirs', '4',
-            '--benchmark-root=gem5-resources/src/gpu/pannotia/fw/bin',
-            '-c', 'fw_hip.gem5',
-            '--options=-f pannotia/dataset/floydwarshall/256_16384.gr -m default'
+            "./build/VEGA_X86/gem5.fast",
+            "-d",
+            output_dir,
+            "configs/example/apu_se.py",
+            "--cpu-type",
+            "X86O3CPU",
+            "-n",
+            "4",
+            "--CPUClock",
+            f"{freq_cpu}GHz",
+            "--gpu-clock",
+            f"{freq_gpu}GHz",
+            "--ruby-clock",
+            f"{freq_ruby}GHz",
+            "--network",
+            "garnet",
+            "--link-width-bits",
+            "64",
+            "--chiplet-topo",
+            "--latency-val={}".format(latency_str_cmd),
+            "--chiplet-clock-domain",
+            "--chiplet-cdc",
+            "--mem-size",
+            "8GiB",
+            "--mem-type",
+            "HBM_2000_4H_1x64",
+            "--num-dirs",
+            "4",
+            "--benchmark-root=gem5-resources/src/gpu/pannotia/fw/bin",
+            "-c",
+            "fw_hip.gem5",
+            "--options=-f pannotia/dataset/floydwarshall/256_16384.gr -m default",
         ]
 
         cmd_docker = [
-            "docker", "run", "--rm",
+            "docker",
+            "run",
+            "--rm",
             # "-v", f"{os.path.expanduser('~')}/.cache:{os.path.expanduser('~')}/.cache",
             # "-v", f"/home/share/HDstorage/{os.environ.get('USER')}:/home/share/HDstorage/{os.environ.get('USER')}",
-            "-v", f"{os.path.expanduser('~')}/Documents:{os.path.expanduser('~')}/Documents",
-            "--user", f"{os.getuid()}:{os.getgid()}",
-            "-e", "HOME",
-            "-w", str(Path.cwd()),
+            "-v",
+            f"{os.path.expanduser('~')}/Documents:{os.path.expanduser('~')}/Documents",
+            "--user",
+            f"{os.getuid()}:{os.getgid()}",
+            "-e",
+            "HOME",
+            "-w",
+            str(Path.cwd()),
             f"ghcr.io/gem5/gcn-gpu:v25-0-{os.environ.get('USER')}",
         ]
         cmd_docker += cmd_gem5
 
         with open(f"{output_dir}/print.log", "w") as log_file:
             try:
-                subprocess.run(cmd_docker, stdout=log_file, stderr=subprocess.STDOUT, check=True)
+                subprocess.run(
+                    cmd_docker,
+                    stdout=log_file,
+                    stderr=subprocess.STDOUT,
+                    check=True,
+                )
             except subprocess.CalledProcessError as e:
                 print(f"Error running gem5 for seq {seq}: {e}")
 
@@ -133,8 +164,8 @@ def run_gem5(input_seqs, freq_num, output_dir_parent, max_workers):
 
 def main():
 
-    output_dir = Path('m5out_movLatFixFreq')
-    results_file = output_dir / 'results.csv'
+    output_dir = Path("m5out_movLatFixFreq_1-15")
+    results_file = output_dir / "results.csv"
     num_gen_latency = 100
     lat_min, lat_max = 1, 15
     lat_step = 14
@@ -143,7 +174,9 @@ def main():
     freq = (2.5, 1.0, 3.0)
 
     # generated = shuffle_seq(num_gen_latency, lat_min, lat_max, results_file)
-    generated = interpolation_lat(lat_min, lat_max, lat_step, lat_num, freq, results_file)
+    generated = interpolation_lat(
+        lat_min, lat_max, lat_step, lat_num, freq, results_file
+    )
 
     print(f"len: {len(generated)}\n generated: {generated}")
     run_gem5(generated, freq_num, output_dir, 10)

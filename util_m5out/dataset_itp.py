@@ -8,22 +8,23 @@ import csv
 
 import numpy as np
 
+
 def load_perf(csv_file):
     lat_perf = dict()
     if not csv_file or not os.path.exists(csv_file):
         raise Exception(f"csv_file does not exist.")
 
-    with open(csv_file, 'r') as f:
+    with open(csv_file, "r") as f:
         cr = csv.DictReader(f)
         for row in cr:
             lat = (
-                int(row['latency_0']),
-                int(row['latency_1']),
-                int(row['latency_2']),
-                int(row['latency_3']),
-                int(row['latency_4']),
+                int(row["latency_0"]),
+                int(row["latency_1"]),
+                int(row["latency_2"]),
+                int(row["latency_3"]),
+                int(row["latency_4"]),
             )
-            lat_perf[lat] = row['ms']
+            lat_perf[lat] = row["ms"]
 
     return lat_perf
 
@@ -37,7 +38,13 @@ def polyfit_lat(lat_perf, coefficients_file):
 
     for idx_coeff in range(5):
         x = list(lat_choices)
-        x_expand = [tuple(lat_fix if idx_lat != idx_coeff else idx_x for idx_lat in range(5)) for idx_x in x]
+        x_expand = [
+            tuple(
+                lat_fix if idx_lat != idx_coeff else idx_x
+                for idx_lat in range(5)
+            )
+            for idx_x in x
+        ]
         y = [float(lat_perf[x]) for x in x_expand]
         # print(f"idx_coeff: {idx_coeff}, x_expand: {x_expand}, y: {y}")
         # coefficients[idx_coeff] = np.polyfit(x, y, 1)
@@ -45,17 +52,18 @@ def polyfit_lat(lat_perf, coefficients_file):
 
     # for idx, coeff in enumerate(coefficients):
     #     print(f"Coefficient for latency index {idx}: {coeff}")
-    np.savetxt(coefficients_file, np.array([cons_base] + coefficients), fmt='%.6f')
+    np.savetxt(
+        coefficients_file, np.array([cons_base] + coefficients), fmt="%.6f"
+    )
 
 
 if __name__ == "__main__":
-    ROOT_SEARCH_DIR = 'm5out_movLatFixFreq'
-    perf_csv = os.path.join(ROOT_SEARCH_DIR, 'results.csv')
-    coefficients_file = os.path.join(ROOT_SEARCH_DIR, 'lat_coeff.txt')
+    ROOT_SEARCH_DIR = "m5out_movLatFixFreq_1-6-11-15"
+    perf_csv = os.path.join(ROOT_SEARCH_DIR, "results.csv")
+    coefficients_file = os.path.join(ROOT_SEARCH_DIR, "lat_coeff.txt")
 
     lat_perf = load_perf(perf_csv)
     polyfit_lat(lat_perf, coefficients_file)
-
 
     # Test
     # latencies = np.array([1,2,1,1,1])
