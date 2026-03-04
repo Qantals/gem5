@@ -81,6 +81,29 @@ def interpolation_lat(lat_min, lat_max, lat_step, lat_num, freq, results_file):
     return generated
 
 
+def step_same_lat(
+    lat_min, lat_max, lat_step, lat_num, freq_candidate, results_file
+):
+
+    gen_existing = load_exist_seq(results_file)
+    generated = set()
+    lat_candidates = list(range(lat_min, lat_max + 1, lat_step))
+    if lat_candidates[-1] != lat_max:
+        lat_candidates.append(lat_max)
+    latencies = [tuple([lat] * lat_num) for lat in lat_candidates]
+
+    for freq in freq_candidate:
+        for latency in latencies:
+            gen_candidate = tuple(freq + latency)
+            if (
+                gen_candidate not in gen_existing
+                and gen_candidate not in generated
+            ):
+                generated.add(gen_candidate)
+
+    return generated
+
+
 def run_gem5(input_seqs, freq_num, output_dir_parent, max_workers):
     def run_single(seq):
         freq_cpu = str(seq[0])
@@ -120,7 +143,7 @@ def run_gem5(input_seqs, freq_num, output_dir_parent, max_workers):
             "--mem-size",
             "8GiB",
             "--mem-type",
-            "HBM_2000_4H_1x64",
+            "LPDDR5_6400_1x16_BG_BL32",
             "--num-dirs",
             "4",
             "--benchmark-root=gem5-resources/src/gpu/pannotia/fw/bin",
@@ -164,18 +187,36 @@ def run_gem5(input_seqs, freq_num, output_dir_parent, max_workers):
 
 def main():
 
-    output_dir = Path("m5out_movLatFixFreq_1-15")
+    output_dir = Path("m5out_balanceLatFreq")
     results_file = output_dir / "results.csv"
-    num_gen_latency = 100
-    lat_min, lat_max = 1, 15
-    lat_step = 14
+    lat_min, lat_max = 1, 11
+    lat_step = 2
     lat_num = 5
     freq_num = 3
-    freq = (2.5, 1.0, 3.0)
 
+    num_gen_latency = 100
     # generated = shuffle_seq(num_gen_latency, lat_min, lat_max, results_file)
-    generated = interpolation_lat(
-        lat_min, lat_max, lat_step, lat_num, freq, results_file
+
+    freq = (2.5, 1.0, 3.0)
+    # generated = interpolation_lat(
+    #     lat_min, lat_max, lat_step, lat_num, freq, results_file
+    # )
+
+    freq_candidate = [
+        (2.5, 1.0, 3.0),
+        (2.0, 1.0, 3.0),
+        (3.8, 1.0, 3.0),
+        (2.5, 0.8, 3.0),
+        (2.5, 1.5, 3.0),
+        # ruby 2.0
+        (2.5, 1.0, 2.0),
+        (2.0, 1.0, 2.0),
+        (3.8, 1.0, 2.0),
+        (2.5, 0.8, 2.0),
+        (2.5, 1.5, 2.0),
+    ]
+    generated = step_same_lat(
+        lat_min, lat_max, lat_step, lat_num, freq_candidate, results_file
     )
 
     print(f"len: {len(generated)}\n generated: {generated}")

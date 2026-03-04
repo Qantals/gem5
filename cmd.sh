@@ -38,7 +38,8 @@
 # --maxtime 1 \
 
 # apu_se.py
-OUTPUT_DIR=m5out_fixLatency/freq2.5-1.0-3.0lat11-11-11-11-11
+# OUTPUT_DIR=m5out_test
+OUTPUT_DIR=m5out_movLatFixFreq/freq2.5-1.0-3.0lat6-1-6-6-1
 mkdir -p "$OUTPUT_DIR"
 # cp latency.txt "$OUTPUT_DIR"
 
@@ -53,13 +54,14 @@ configs/example/apu_se.py \
 --network garnet \
 --link-width-bits 64 \
 --chiplet-topo \
---latency-val=11,11,11,11,11 \
+--latency-val=6,1,6,6,1 \
 --chiplet-clock-domain \
 --chiplet-cdc \
 --mem-size 8GiB \
---mem-type HBM_2000_4H_1x64 \
+--mem-type LPDDR5_6400_1x16_BG_BL32 \
 --num-dirs 4 \
 --benchmark-root=gem5-resources/src/gpu/pannotia/fw/bin -c fw_hip.gem5 --options="-f pannotia/dataset/floydwarshall/256_16384.gr -m default" \
 > "${OUTPUT_DIR}/print.log" 2>&1 &
 
+# --benchmark-root=gem5-resources/src/gpu/pannotia/fw/bin -c fw_hip.gem5 --options="-f pannotia/dataset/floydwarshall/256_16384.gr -m default" \
 # --latency-path latency.txt \
