@@ -220,7 +220,7 @@ def main():
     )
 
     print(f"len: {len(generated)}\n generated: {generated}")
-    run_gem5(generated, freq_num, output_dir, 10)
+    run_gem5(generated, freq_num, output_dir, 1)
 
 
 if __name__ == "__main__":

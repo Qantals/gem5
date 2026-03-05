@@ -71,8 +71,8 @@ def extract_values_from_stats(stats_file_path: Path):
 
 
 def main():
-    ROOT_SEARCH_DIR = "m5out_fixLatency"
-    FOLDER_PATTERN = re.compile(r"freq3.0.*|freq4.0-1.8-1.8.*")
+    ROOT_SEARCH_DIR = "m5out_movLatFixFreq/m5out_movLatFixFreq_1-6"
+    FOLDER_PATTERN = re.compile(r"freq.*")
     OUTPUT_REPORT_FILE = os.path.join(ROOT_SEARCH_DIR, "proportions.txt")
 
     print(
