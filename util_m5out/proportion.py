@@ -9,23 +9,28 @@ def find_target_folders(root_dir: str, folder_pattern) -> List[Path]:
 
     target_folders = []
 
-    # for dirpath, dirnames, filenames in os.walk(root_dir):
-    #     for dirname in dirnames:
-    #         if folder_pattern.fullmatch(dirname):
-    #             target_folders.append(Path(dirpath) / dirname)
+    for dirpath, dirnames, filenames in os.walk(root_dir):
+        for dirname in dirnames:
+            if (
+                folder_pattern.fullmatch(dirname)
+                and (Path(dirpath) / dirname / "stats.txt").exists()
+            ):
+                target_folders.append(Path(dirpath) / dirname)
 
-    for dirname in os.listdir(root_dir):
-        if folder_pattern.fullmatch(dirname):
-            target_folders.append(Path(root_dir) / dirname)
+    # for dirname in os.listdir(root_dir):
+    #     if folder_pattern.fullmatch(dirname):
+    #         target_folders.append(Path(root_dir) / dirname)
 
     return target_folders
 
 
 def extract_values_from_stats(stats_file_path: Path):
+    list_hostSeconds = []
     list_simTicks = []
     list_shaderActiveTicks = []
     list_Bursts = []
 
+    pattern_hostSeconds = re.compile(r"^hostSeconds\s+(\d+\.\d+)\s+#.*$")
     pattern_simTicks = re.compile(r"^simTicks\s+(\d+)\s+#.*$")
     pattern_shaderActiveTicks = re.compile(
         r"^system\.cpu4\.shaderActiveTicks\s+(\d+)\s+#.*$"
@@ -39,11 +44,14 @@ def extract_values_from_stats(stats_file_path: Path):
 
     with open(stats_file_path, "r") as f:
         for line in f:
+            match_hostSeconds = pattern_hostSeconds.match(line)
             match_simTicks = pattern_simTicks.match(line)
             match_shaderActiveTicks = pattern_shaderActiveTicks.match(line)
             match_readBursts = pattern_readBursts.match(line)
             match_writeBursts = pattern_writeBursts.match(line)
-            if match_simTicks:
+            if match_hostSeconds:
+                list_hostSeconds.append(float(match_hostSeconds.group(1)))
+            elif match_simTicks:
                 list_simTicks.append(int(match_simTicks.group(1)))
             elif match_shaderActiveTicks:
                 list_shaderActiveTicks.append(
@@ -57,22 +65,24 @@ def extract_values_from_stats(stats_file_path: Path):
                 )
                 list_Bursts.append(bursts_value)
 
+    hostSeconds = sum(list_hostSeconds) if list_hostSeconds else None
     simTicks = sum(list_simTicks) if list_simTicks else None
     shaderActiveTicks = (
         sum(list_shaderActiveTicks) if list_shaderActiveTicks else None
     )
     bursts = sum(list_Bursts) if list_Bursts else None
 
-    prop_gpu = shaderActiveTicks / simTicks
-    prop_cpu = 1 - prop_gpu
-    intv_dram = simTicks / bursts
+    hostMinutes = hostSeconds / 60 if hostSeconds is not None else None
+    prop_gpu = shaderActiveTicks / simTicks if simTicks else None
+    prop_cpu = 1 - prop_gpu if prop_gpu is not None else None
+    intv_dram = simTicks / bursts if bursts else None
 
-    return prop_cpu, prop_gpu, intv_dram
+    return prop_cpu, prop_gpu, intv_dram, hostMinutes
 
 
 def main():
-    ROOT_SEARCH_DIR = "m5out_movLatFixFreq/m5out_movLatFixFreq_1-6"
-    FOLDER_PATTERN = re.compile(r"freq.*")
+    ROOT_SEARCH_DIR = "m5out_benchmark/all/"
+    FOLDER_PATTERN = re.compile(r".*")
     OUTPUT_REPORT_FILE = os.path.join(ROOT_SEARCH_DIR, "proportions.txt")
 
     print(
@@ -92,13 +102,18 @@ def main():
     results: List[Dict] = []
     for folder in target_folders:
         stats_file = folder / "stats.txt"
-        prop_cpu, prop_gpu, intv_dram = extract_values_from_stats(stats_file)
+        prop_cpu, prop_gpu, intv_dram, hostMinutes = extract_values_from_stats(
+            stats_file
+        )
 
-        assert (
+        if not (
             prop_cpu is not None
             and prop_gpu is not None
             and intv_dram is not None
-        ), f"Failed to extract necessary values from {stats_file}"
+            and hostMinutes is not None
+        ):
+            print(f"Failed to extract necessary values from {stats_file}")
+            continue
 
         results.append(
             {
@@ -106,6 +121,7 @@ def main():
                 "prop_cpu": prop_cpu,
                 "prop_gpu": prop_gpu,
                 "intv_dram": intv_dram,
+                "hostMinutes": hostMinutes,
             }
         )
 
@@ -125,14 +141,14 @@ def main():
             f.write("Gem5 Simulation proportion Report\n")
             f.write("=" * 40 + "\n")
             f.write(
-                f"{'Folder Name':<30} | {'prop_cpu':<15} | {'prop_gpu':<15} | {'intv_dram':<15}\n"
+                f"{'Folder Name':<30} | {'prop_cpu':<15} | {'prop_gpu':<15} | {'intv_dram':<15} | {'hostMinutes':<15}\n"
             )
-            f.write("-" * 90 + "\n")
+            f.write("-" * 105 + "\n")
 
             # Write each result
             for res in results:
                 f.write(
-                    f"{res['folder_name']:<30} | {res['prop_cpu']:<15.6f} | {res['prop_gpu']:<15.6f} | {res['intv_dram']:<15.6f}\n"
+                    f"{res['folder_name']:<30} | {res['prop_cpu']:<15.6f} | {res['prop_gpu']:<15.6f} | {res['intv_dram']:<15.6f} | {res['hostMinutes']:<15.6f}\n"
                 )
 
         print(
