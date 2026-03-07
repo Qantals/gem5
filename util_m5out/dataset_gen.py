@@ -205,22 +205,22 @@ def main():
     freq_candidate = [
         (2.5, 1.0, 3.0),
         (2.0, 1.0, 3.0),
-        (3.8, 1.0, 3.0),
+        (4.0, 1.0, 3.0),
         (2.5, 0.8, 3.0),
         (2.5, 1.5, 3.0),
         # ruby 2.0
-        (2.5, 1.0, 2.0),
-        (2.0, 1.0, 2.0),
-        (3.8, 1.0, 2.0),
-        (2.5, 0.8, 2.0),
-        (2.5, 1.5, 2.0),
+        # (2.5, 1.0, 2.0),
+        # (2.0, 1.0, 2.0),
+        # (4.0, 1.0, 2.0),
+        # (2.5, 0.8, 2.0),
+        # (2.5, 1.5, 2.0),
     ]
     generated = step_same_lat(
         lat_min, lat_max, lat_step, lat_num, freq_candidate, results_file
     )
 
     print(f"len: {len(generated)}\n generated: {generated}")
-    run_gem5(generated, freq_num, output_dir, 1)
+    run_gem5(generated, freq_num, output_dir, 5)
 
 
 if __name__ == "__main__":
