@@ -82,7 +82,7 @@ def extract_values_from_log(log_file_path: Path):
 
 
 def main():
-    ROOT_SEARCH_DIR = "m5out_balanceLatFreq"
+    ROOT_SEARCH_DIR = "m5out_movFreqFixLat1"
     FOLDER_PATTERN = re.compile(r"freq.*")
     perf_unit = "ms"
     OUTPUT_RESULTS_FILE = os.path.join(ROOT_SEARCH_DIR, "results.csv")
