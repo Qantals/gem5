@@ -38,7 +38,7 @@
 # --maxtime 1 \
 
 # apu_se.py
-OUTPUT_DIR=m5out_gpuFreq/freq2.5-1.5-3.0lat1-1-1-1-1
+OUTPUT_DIR=m5out_gpuFreq/fw/freq4.0-1.0-3.0lat6-6-6-6-6
 mkdir -p "$OUTPUT_DIR"
 # cp latency.txt "$OUTPUT_DIR"
 
@@ -47,17 +47,17 @@ mkdir -p "$OUTPUT_DIR"
 configs/example/apu_se.py \
 --cpu-type X86O3CPU \
 -n 4 \
---CPUClock 2.5GHz \
---gpu-clock 1.5GHz \
+--CPUClock 4.0GHz \
+--gpu-clock 1.0GHz \
 --ruby-clock 3.0GHz \
 --network garnet \
 --link-width-bits 64 \
 --chiplet-topo \
---latency-val=1,1,1,1,1 \
+--latency-val=6,6,6,6,6 \
 --chiplet-clock-domain \
 --chiplet-cdc \
 --mem-size 8GiB \
---mem-type LPDDR5_6400_1x16_BG_BL32 \
+--mem-type HBM_2000_4H_1x64 \
 --num-dirs 4 \
 --benchmark-root=gem5-resources/src/gpu/pannotia/fw/bin -c fw_hip.gem5 --options="-f pannotia/dataset/floydwarshall/256_16384.gr -m default" \
 > "${OUTPUT_DIR}/print.log" 2>&1 &
