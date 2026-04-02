@@ -7,6 +7,9 @@ import subprocess
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import itertools
+from typing import List, Tuple, Set
+
+import numpy as np
 
 
 def load_exist_seq(results_file):
@@ -72,6 +75,54 @@ def interpolation_lat(lat_min, lat_max, lat_step, lat_num, freq, results_file):
 
     for latency in latencies:
         gen_candidate = tuple(freq + latency)
+        if (
+            gen_candidate not in gen_existing
+            and gen_candidate not in generated
+        ):
+            generated.add(gen_candidate)
+
+    return generated
+
+
+def interpolation_freq(
+    freq_cpu_min: float,
+    freq_cpu_max: float,
+    freq_cpu_step: float,
+    freq_gpu_min: float,
+    freq_gpu_max: float,
+    freq_gpu_step: float,
+    freq_ruby: float,
+    lat: tuple[int],
+    results_file,
+):
+    """freq_cpu: List of CPU frequencies to interpolate, e.g., [2.0, 2.5, 3.0]"""
+
+    gen_existing = load_exist_seq(results_file)
+    generated = set()
+    freq_cpu = [
+        round(float(x), 1)
+        for x in np.arange(
+            freq_cpu_min, freq_cpu_max + freq_cpu_step, freq_cpu_step
+        )
+    ]
+    if freq_cpu[-1] != freq_cpu_max:
+        freq_cpu.append(float(freq_cpu_max))
+    freq_gpu = [
+        round(float(x), 1)
+        for x in np.arange(
+            freq_gpu_min, freq_gpu_max + freq_gpu_step, freq_gpu_step
+        )
+    ]
+    if freq_gpu[-1] != freq_gpu_max:
+        freq_gpu.append(float(freq_gpu_max))
+    frequencies = list(itertools.product(freq_cpu, freq_gpu))
+    frequencies = [
+        (float(freq[0]), float(freq[1]), float(freq_ruby))
+        for freq in frequencies
+    ]
+
+    for freq in frequencies:
+        gen_candidate = tuple(freq + lat)
         if (
             gen_candidate not in gen_existing
             and gen_candidate not in generated
@@ -189,40 +240,35 @@ def run_gem5(input_seqs, freq_num, output_dir_parent, max_workers):
 
 def main():
 
-    output_dir = Path("m5out_balanceLatFreq")
+    output_dir = Path("m5out_movFreqFixLat_gpuStep")
     results_file = output_dir / "results.csv"
-    lat_min, lat_max = 1, 11
-    lat_step = 2
+    lat_min, lat_max = 3, 11
+    lat_step = 8
     lat_num = 5
     freq_num = 3
 
     num_gen_latency = 100
     # generated = shuffle_seq(num_gen_latency, lat_min, lat_max, results_file)
 
-    freq = (2.5, 1.0, 3.0)
+    freq = (2.5, 1.5, 3.0)
     # generated = interpolation_lat(
     #     lat_min, lat_max, lat_step, lat_num, freq, results_file
     # )
 
-    freq_candidate = [
-        (2.5, 1.0, 3.0),
-        (2.0, 1.0, 3.0),
-        (4.0, 1.0, 3.0),
-        (2.5, 0.8, 3.0),
-        (2.5, 1.5, 3.0),
-        # ruby 2.0
-        # (2.5, 1.0, 2.0),
-        # (2.0, 1.0, 2.0),
-        # (4.0, 1.0, 2.0),
-        # (2.5, 0.8, 2.0),
-        # (2.5, 1.5, 2.0),
-    ]
-    generated = step_same_lat(
-        lat_min, lat_max, lat_step, lat_num, freq_candidate, results_file
+    generated = interpolation_freq(
+        freq_cpu_min=2.5,
+        freq_cpu_max=2.5,
+        freq_cpu_step=0.3,
+        freq_gpu_min=0.6,
+        freq_gpu_max=1.4,
+        freq_gpu_step=0.1,
+        freq_ruby=3.0,
+        lat=(6,) * lat_num,
+        results_file=results_file,
     )
 
     print(f"len: {len(generated)}\n generated: {generated}")
-    run_gem5(generated, freq_num, output_dir, 5)
+    run_gem5(generated, freq_num, output_dir, 10)
 
 
 if __name__ == "__main__":
