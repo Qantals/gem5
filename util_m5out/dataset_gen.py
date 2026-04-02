@@ -157,9 +157,9 @@ def step_same_lat(
 
 def run_gem5(input_seqs, freq_num, output_dir_parent, max_workers):
     def run_single(seq):
-        freq_cpu = str(seq[0])
-        freq_gpu = str(seq[1])
-        freq_ruby = str(seq[2])
+        freq_cpu = str(round(seq[0], 2))
+        freq_gpu = str(round(seq[1], 2))
+        freq_ruby = str(round(seq[2], 1))
         latency_str_dir = "-".join(str(x) for x in seq[freq_num:])
         latency_str_cmd = latency_str_dir.replace("-", ",")
         output_dir = str(
@@ -240,7 +240,7 @@ def run_gem5(input_seqs, freq_num, output_dir_parent, max_workers):
 
 def main():
 
-    output_dir = Path("m5out_movFreqFixLat_gpuStep")
+    output_dir = Path("m5out_movFreqFixLat_cpuStep")
     results_file = output_dir / "results.csv"
     lat_min, lat_max = 3, 11
     lat_step = 8
@@ -256,12 +256,12 @@ def main():
     # )
 
     generated = interpolation_freq(
-        freq_cpu_min=2.5,
-        freq_cpu_max=2.5,
-        freq_cpu_step=0.3,
-        freq_gpu_min=0.6,
-        freq_gpu_max=1.4,
-        freq_gpu_step=0.1,
+        freq_cpu_min=2.1,
+        freq_cpu_max=2.9,
+        freq_cpu_step=0.1,
+        freq_gpu_min=1.0,
+        freq_gpu_max=1.0,
+        freq_gpu_step=0.5,
         freq_ruby=3.0,
         lat=(6,) * lat_num,
         results_file=results_file,
