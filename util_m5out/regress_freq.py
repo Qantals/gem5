@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-import argparse
 import joblib
 from pathlib import Path
 
@@ -15,7 +14,8 @@ def load_data(csv_path):
     df = pd.read_csv(csv_path)
 
     feature_cols = [
-        "freq",
+        "freq_cpu",
+        "freq_gpu",
     ]
 
     X = df[feature_cols].values
@@ -82,9 +82,9 @@ def print_coefficients(model, feature_names):
 
 def main():
 
-    csv_path = Path("m5out_movFreqFixLat_cpuStep/stat.csv")
-    degree = 2
-    save_model = csv_path.parent / "freq.pkl"
+    csv_path = Path("m5out_movFreqFixLat/results.csv")
+    degree = 4
+    save_model = csv_path.parent / "freq_all.pkl"
 
     print("Loading data...")
     X, y, feature_names = load_data(csv_path)
@@ -107,14 +107,14 @@ def main():
 
     evaluate(best_model, X_test, y_test)
 
-    print_coefficients(best_model, feature_names)
+    # print_coefficients(best_model, feature_names)
 
     if save_model:
         joblib.dump(best_model, save_model)
         print(f"\nModel saved to {save_model}")
 
         model = joblib.load(save_model)
-        sample = np.array([[1.0]])
+        sample = np.array([[2.5, 1.0]])
         prediction = model.predict(sample)
         print("Predicted time cost (ms):", prediction[0])
 

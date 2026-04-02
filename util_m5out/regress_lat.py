@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import argparse
 import joblib
+from pathlib import Path
 
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.preprocessing import StandardScaler, PolynomialFeatures
@@ -85,9 +86,9 @@ def print_coefficients(model, feature_names):
 
 def main():
 
-    csv_path = "m5out_movLatFixFreq_1-6-11-15/latency_all.csv"
-    degree = 2
-    save_model = "m5out_movLatFixFreq_1-6-11-15/latency_all.pkl"
+    csv_path = Path("m5out_movLatFixFreq_1-6-11-15/latency_all.csv")
+    degree = 4
+    save_model = csv_path.parent / "latency_all.pkl"
 
     print("Loading data...")
     X, y, feature_names = load_data(csv_path)
@@ -110,7 +111,7 @@ def main():
 
     evaluate(best_model, X_test, y_test)
 
-    print_coefficients(best_model, feature_names)
+    # print_coefficients(best_model, feature_names)
 
     if save_model:
         joblib.dump(best_model, save_model)
