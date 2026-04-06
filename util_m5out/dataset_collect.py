@@ -44,8 +44,8 @@ def extract_values_from_stats(stats_file_path: Path, perf_unit: str) -> float:
 
     seconds = sum(simSeconds_list) if simSeconds_list else None
     insts = sum(simInsts_list) if simInsts_list else None
-    mips = insts / seconds / 1e6
-    ms = seconds * 1e3
+    mips = insts / seconds / 1e6 if seconds else None
+    ms = round(seconds * 1e3, 3) if seconds is not None else None
 
     if perf_unit == "mips":
         return mips
@@ -81,11 +81,36 @@ def extract_values_from_log(log_file_path: Path):
     return result
 
 
+def extract_power(
+    parent_dir: Path, scale_cpu: float, scale_gpu: float
+) -> Tuple[float, float]:
+    power_cpu_file = parent_dir / "power_cpu.txt"
+    power_gpu_file = parent_dir / "power_gpu.txt"
+
+    power_cpu = None
+    power_gpu = None
+
+    if power_cpu_file.exists():
+        with open(power_cpu_file, "r") as f:
+            for line in f:
+                power_cpu = round(float(line.strip()) * scale_cpu, 3)
+
+    if power_gpu_file.exists():
+        with open(power_gpu_file, "r") as f:
+            for line in f:
+                power_gpu = round(float(line.strip()) * scale_gpu, 3)
+
+    return power_cpu, power_gpu
+
+
 def main():
-    ROOT_SEARCH_DIR = "m5out_movFreqFixLat1"
+    ROOT_SEARCH_DIR = "m5out_repository/m5out_movFreqFixLat_gpuStep"
+    OUTPUT_RESULTS_FILE = "model_bkp/freqGPU_power_perf.csv"
+    scale_cpu = 1.0
+    scale_gpu = 1.0
+    # OUTPUT_RESULTS_FILE = os.path.join(ROOT_SEARCH_DIR, "results.csv")
     FOLDER_PATTERN = re.compile(r"freq.*")
     perf_unit = "ms"
-    OUTPUT_RESULTS_FILE = os.path.join(ROOT_SEARCH_DIR, "results.csv")
 
     # Step 1: Find all folders matching the pattern
     target_folders = find_target_folders(ROOT_SEARCH_DIR, FOLDER_PATTERN)
@@ -103,7 +128,11 @@ def main():
         perf = extract_values_from_stats(stats_file, perf_unit)
         log_file = folder / "print.log"
         result = extract_values_from_log(log_file)
-
+        power_cpu, power_gpu = extract_power(folder, scale_cpu, scale_gpu)
+        if power_cpu is not None:
+            result["power_cpu"] = power_cpu
+        if power_gpu is not None:
+            result["power_gpu"] = power_gpu
         result[perf_unit] = perf
         # result['folder_name'] = folder.name
 
