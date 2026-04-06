@@ -103,17 +103,17 @@ def extract_power(
     return power_cpu, power_gpu
 
 
-def main():
-    ROOT_SEARCH_DIR = "m5out_repository/m5out_movFreqFixLat_gpuStep"
-    OUTPUT_RESULTS_FILE = "model_bkp/freqGPU_power_perf.csv"
-    scale_cpu = 1.0
-    scale_gpu = 1.0
-    # OUTPUT_RESULTS_FILE = os.path.join(ROOT_SEARCH_DIR, "results.csv")
-    FOLDER_PATTERN = re.compile(r"freq.*")
-    perf_unit = "ms"
+def dataset_collect(
+    root_search_dir: str,
+    output_results_file: str,
+    scale_cpu: float,
+    scale_gpu: float,
+    folder_pattern: re.Pattern,
+    perf_unit: str,
+):
 
     # Step 1: Find all folders matching the pattern
-    target_folders = find_target_folders(ROOT_SEARCH_DIR, FOLDER_PATTERN)
+    target_folders = find_target_folders(root_search_dir, folder_pattern)
 
     if not target_folders:
         print("No matching folders found. Exiting.")
@@ -154,14 +154,29 @@ def main():
     results.sort(key=lambda x: x[perf_unit], reverse=is_reverse)
 
     # Step 4: Generate and write
-    with open(OUTPUT_RESULTS_FILE, "w") as f:
+    with open(output_results_file, "w") as f:
         cw = csv.DictWriter(f, fieldnames=results[0].keys())
         cw.writeheader()
         cw.writerows(results)
     print(
-        f"\nProcessing complete! Results have been saved to {OUTPUT_RESULTS_FILE}"
+        f"\nProcessing complete! Results have been saved to {output_results_file}"
     )
 
 
 if __name__ == "__main__":
-    main()
+    root_search_dir = Path("m5out_repository/m5out_movFreqFixLat_cpuStep")
+    output_results_file = Path("model_bkp/freqCPU_power_perf.csv")
+    # output_results_file = root_search_dir / Path("results.csv")
+    scale_cpu = 5.28
+    scale_gpu = 2.93
+    folder_pattern = re.compile(r"freq.*")
+    perf_unit = "ms"
+
+    dataset_collect(
+        root_search_dir,
+        output_results_file,
+        scale_cpu,
+        scale_gpu,
+        folder_pattern,
+        perf_unit,
+    )
