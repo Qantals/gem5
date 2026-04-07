@@ -23,21 +23,6 @@ build-gcngpu:
 	docker build --build-arg TZ_ARG=$(TZ) $(DOCKER_BUILD_OPT) -f $(DOCKER_FILE_GCNGPU) -t $(DOCKER_IMAGE_GCNGPU) .
 
 
-
-run-root: run-root-gem5
-
-run-root-gem5:
-	docker run --rm -it \
-		--device /dev/kvm \
-		--cap-add=CAP_SYS_ADMIN \
-		-v "${HOME}/.cache:${HOME}/.cache" \
-		-v "/home/share/HDstorage/${USER}:/home/share/HDstorage/${USER}" \
-		-w "${PWD}/.." \
-		-e GEM5_RESOURCE_DIR \
-		$(DOCKER_IMAGE_GEM5)
-
-
-
 run: run-gem5
 
 run-gem5:
@@ -65,16 +50,12 @@ run-gpufs:
 
 run-gcngpu:
 	docker run --rm -it \
-		--device /dev/kvm \
-		--cap-add=CAP_PERFMON \
 		-v "${HOME}/.cache:${HOME}/.cache" \
 		-v "/home/share/HDstorage/${USER}:/home/share/HDstorage/${USER}" \
 		--user $(shell id -u):$(shell id -g) \
-		--group-add $(shell getent group kvm | cut -d: -f3) \
-		--group-add $(shell getent group libvirt | cut -d: -f3) \
 		-w "${PWD}/.." \
 		-e GEM5_RESOURCE_DIR \
 		-e HOME \
 		$(DOCKER_IMAGE_GCNGPU)
 
-.PHONY: all build-gem5 build-gpufs build-gcngpu run-root run-root-gem5 run run-gem5 run-gpufs run-gcngpu
+.PHONY: all build-gem5 build-gpufs build-gcngpu run run-gem5 run-gpufs run-gcngpu
