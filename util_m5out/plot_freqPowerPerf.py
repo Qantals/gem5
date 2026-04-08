@@ -1,27 +1,23 @@
+import csv
+from pathlib import Path
+
 import pandas as pd
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from pathlib import Path
 
 
-def plot_freqPerf(csv_file: Path, fig_file: Path):
-    # Read CSV file
+def plot_freqPerf(csv_file: Path, fig_file: Path, type: str):
     df = pd.read_csv(csv_file)
-
-    # Prepare data
-    x = df["freq_cpu"]
-    y = df["freq_gpu"]
-    z = df["ms"]
+    x = df[f"freq_{type}"]
+    y_perf = df["ms"]
 
     # Plot
-    fig = plt.figure(figsize=(10, 7))
-    ax = fig.add_subplot(111, projection="3d")
-    ax.scatter(x, y, z, c=z, cmap="viridis", marker="o")
+    fig, ax = plt.subplots(1, 1, figsize=(18, 6))
+    ax.plot(x, y_perf, marker="o", label="Performance")
 
-    ax.set_xlabel("freq_cpu")
-    ax.set_ylabel("freq_gpu")
-    ax.set_zlabel("ms")
-    ax.set_title("3D Scatter: freq_cpu vs freq_gpu vs ms")
+    ax.set_xlabel(f"freq_{type}")
+    ax.set_ylabel(f"ms")
+    ax.set_title(f"Performance vs Frequency ({type.upper()})")
 
     plt.savefig(fig_file)
 
@@ -48,12 +44,8 @@ def plot_freqPowerPerf(csv_file: Path, fig_file: Path, type: str):
 
 
 if __name__ == "__main__":
-    root_dir = Path("model_bkp")
-    csv_file = root_dir / Path("freqCPU_power_perf.csv")
-    fig_file = root_dir / Path("freqCPU_power_perf.png")
-    type = "cpu"
-    plot_freqPowerPerf(csv_file, fig_file, type)
-    csv_file = root_dir / Path("freqGPU_power_perf.csv")
+    root_dir = Path("m5out_movFreq_gpu")
+    csv_file = root_dir / Path("results.csv")
     fig_file = root_dir / Path("freqGPU_power_perf.png")
     type = "gpu"
     plot_freqPowerPerf(csv_file, fig_file, type)

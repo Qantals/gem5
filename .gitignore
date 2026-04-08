@@ -42,4 +42,4 @@ m5out*
 bootcamp
 build*
 materials/
-model_bkp/*.png
+model_bkp/**/*.png

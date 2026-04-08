@@ -186,7 +186,7 @@ def run_gem5(input_seqs, freq_num, output_dir_parent, max_workers):
             "--network",
             "garnet",
             "--link-width-bits",
-            "64",
+            "128",
             "--chiplet-topo",
             "--latency-val={}".format(latency_str_cmd),
             "--chiplet-clock-domain",
@@ -197,10 +197,13 @@ def run_gem5(input_seqs, freq_num, output_dir_parent, max_workers):
             "HBM_2000_4H_1x64",
             "--num-dirs",
             "4",
-            "--benchmark-root=gem5-resources/src/gpu/pannotia/fw/bin",
+            # "--benchmark-root=gem5-resources/src/gpu/pannotia/fw/bin",
+            # "-c",
+            # "fw_hip.gem5",
+            # "--options=-f pannotia/dataset/floydwarshall/256_16384.gr -m default",
             "-c",
-            "fw_hip.gem5",
-            "--options=-f pannotia/dataset/floydwarshall/256_16384.gr -m default",
+            "gem5-resources/src/gpu/heterosync/bin/allSyncPrims-1kernel",
+            "--options=sleepMutex 10 8 2",
         ]
 
         cmd_docker = [
@@ -238,32 +241,32 @@ def run_gem5(input_seqs, freq_num, output_dir_parent, max_workers):
         executor.map(run_single, input_seqs)
 
 
-def main():
+def dataset_gen():
 
-    output_dir = Path("m5out_movFreqFixLat_cpuStep")
+    output_dir = Path("m5out_movFreq")
     results_file = output_dir / "results.csv"
     lat_min, lat_max = 3, 11
-    lat_step = 8
+    lat_step = 4
     lat_num = 5
     freq_num = 3
 
     num_gen_latency = 100
     # generated = shuffle_seq(num_gen_latency, lat_min, lat_max, results_file)
 
-    freq = (2.5, 1.5, 3.0)
+    freq = (3.0, 2.0, 3.5)
     # generated = interpolation_lat(
     #     lat_min, lat_max, lat_step, lat_num, freq, results_file
     # )
 
     generated = interpolation_freq(
-        freq_cpu_min=2.1,
-        freq_cpu_max=2.9,
-        freq_cpu_step=0.1,
+        freq_cpu_min=1.0,
+        freq_cpu_max=4.0,
+        freq_cpu_step=0.5,
         freq_gpu_min=1.0,
-        freq_gpu_max=1.0,
+        freq_gpu_max=3.0,
         freq_gpu_step=0.5,
-        freq_ruby=3.0,
-        lat=(6,) * lat_num,
+        freq_ruby=3.5,
+        lat=(1, 1, 1, 1, 1),
         results_file=results_file,
     )
 
@@ -272,4 +275,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    dataset_gen()

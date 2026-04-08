@@ -43,7 +43,7 @@ def dataset_collect(
         if result_power["power_gpu"] is not None:
             result["power_gpu"] = result_power["power_gpu"]
         result[perf_unit] = result_stats["perf"]
-        # result['folder_name'] = folder.name
+        # result["folder_name"] = folder.name
 
         results.append(result)
 
@@ -73,9 +73,9 @@ def dataset_collect(
 
 
 if __name__ == "__main__":
-    root_search_dir = Path("m5out_repository/m5out_movFreqFixLat_gpuStep")
-    output_results_file = Path("model_bkp/freqGPU_power_perf.csv")
-    # output_results_file = root_search_dir / Path("results.csv")
+    root_search_dir = Path("m5out_movFreq")
+    # output_results_file = Path("model_bkp/freqGPU_power_perf.csv")
+    output_results_file = root_search_dir / Path("results.csv")
     scale_cpu = 5.28
     scale_gpu = 2.93
     folder_pattern = ""
