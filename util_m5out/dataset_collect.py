@@ -73,11 +73,13 @@ def dataset_collect(
 
 
 if __name__ == "__main__":
-    root_search_dir = Path("m5out_movFreq")
-    # output_results_file = Path("model_bkp/freqGPU_power_perf.csv")
-    output_results_file = root_search_dir / Path("results.csv")
-    scale_cpu = 5.28
-    scale_gpu = 2.93
+    root_search_dir = Path("m5out_movFreq_gpu")
+    output_results_file = Path(
+        "model_bkp/heterosync_sleepMutex/freqGPU_power_perf.csv"
+    )
+    # output_results_file = root_search_dir / Path("results.csv")
+    scale_cpu = 4.14
+    scale_gpu = 8.98
     folder_pattern = ""
     perf_unit = "ms"
 
