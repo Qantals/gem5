@@ -1117,6 +1117,7 @@ if args.fast_forward:
 # exit_event = m5.simulate(maxtick)
 window = args.transient_window_ticks
 next_window_tick = m5.curTick() + window if window > 0 else None
+is_dump_kernel = True if window > 0 else False
 
 while True:
     remaining = maxtick - m5.curTick()
@@ -1159,10 +1160,12 @@ while True:
         print("breaking loop with checkpoint")
         break
     elif "GPU Kernel Completed" in cause:
-        # print("GPU Kernel Completed")
-        print("GPU Kernel Completed dump and reset")
-        m5.stats.dump()
-        m5.stats.reset()
+        if is_dump_kernel:
+            print("GPU Kernel Completed dump and reset")
+            m5.stats.dump()
+            m5.stats.reset()
+        else:
+            print("GPU Kernel Completed")
     elif "GPU Blit Kernel Completed" in cause:
         print("GPU Blit Kernel Completed dump and reset")
         m5.stats.dump()

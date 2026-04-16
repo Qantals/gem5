@@ -8,7 +8,10 @@ from utils import find_target_folders, extract_values_from_stats
 
 
 def proportion(
-    root_search_dir: Path, folder_pattern: str, output_report_file: Path
+    root_search_dir: Path,
+    folder_pattern: str,
+    output_report_file: Path,
+    perf_unit: str,
 ):
 
     # Step 1: Find all folders matching the pattern
@@ -21,13 +24,14 @@ def proportion(
     results: List[Dict] = []
     for folder in target_folders:
         stats_file = folder / "stats.txt"
-        result = extract_values_from_stats(stats_file, perf_unit="ms")
+        result = extract_values_from_stats(stats_file, perf_unit)
 
         if not (
             result["prop_cpu"] is not None
             and result["prop_gpu"] is not None
             and result["intv_dram"] is not None
             and result["hostMinutes"] is not None
+            and result["perf"] is not None
         ):
             print(f"Failed to extract necessary values from {stats_file}")
             continue
@@ -39,6 +43,7 @@ def proportion(
                 "prop_gpu": result["prop_gpu"],
                 "intv_dram": result["intv_dram"],
                 "hostMinutes": result["hostMinutes"],
+                "perf": result["perf"],
             }
         )
 
@@ -51,14 +56,14 @@ def proportion(
         f.write("Gem5 Simulation proportion Report\n")
         f.write("=" * 40 + "\n")
         f.write(
-            f"{'Folder Name':<30} | {'prop_cpu':<15} | {'prop_gpu':<15} | {'intv_dram':<15} | {'hostMinutes':<15}\n"
+            f"{'Folder Name':<30} | {'prop_cpu':<15} | {'prop_gpu':<15} | {'intv_dram':<15} | {'hostMinutes':<15} | {perf_unit:<15}\n"
         )
-        f.write("-" * 105 + "\n")
+        f.write("-" * 120 + "\n")
 
         # Write each result
         for res in results:
             f.write(
-                f"{res['folder_name']:<30} | {res['prop_cpu']:<15.6f} | {res['prop_gpu']:<15.6f} | {res['intv_dram']:<15.6f} | {res['hostMinutes']:<15.6f}\n"
+                f"{res['folder_name']:<30} | {res['prop_cpu']:<15.6f} | {res['prop_gpu']:<15.6f} | {res['intv_dram']:<15.6f} | {res['hostMinutes']:<15.6f} | {res['perf']:<15.6f}\n"
             )
 
     print(
@@ -67,7 +72,8 @@ def proportion(
 
 
 if __name__ == "__main__":
-    root_search_dir = Path("m5out_benchmarks/all")
+    root_search_dir = Path("m5out_quickBen")
     output_report_file = root_search_dir / "proportions.txt"
     folder_pattern = ""
-    proportion(root_search_dir, folder_pattern, output_report_file)
+    perf_unit = "ms"
+    proportion(root_search_dir, folder_pattern, output_report_file, perf_unit)
