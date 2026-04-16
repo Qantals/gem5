@@ -1159,19 +1159,19 @@ while True:
         print("breaking loop with checkpoint")
         break
     elif "GPU Kernel Completed" in cause:
-        print("GPU Kernel Completed")
-        # print("GPU Kernel Completed dump and reset")
-        # m5.stats.dump()
-        # m5.stats.reset()
+        # print("GPU Kernel Completed")
+        print("GPU Kernel Completed dump and reset")
+        m5.stats.dump()
+        m5.stats.reset()
     elif "GPU Blit Kernel Completed" in cause:
         print("GPU Blit Kernel Completed dump and reset")
         m5.stats.dump()
         m5.stats.reset()
-    elif "workbegin" in cause and next_window_tick is None:
+    elif "workbegin" in cause:
         print("m5 work begin dump and reset")
         m5.stats.dump()
         m5.stats.reset()
-    elif "workend" in cause and next_window_tick is None:
+    elif "workend" in cause:
         print("m5 work end dump and reset")
         m5.stats.dump()
         m5.stats.reset()
