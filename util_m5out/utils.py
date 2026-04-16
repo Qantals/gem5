@@ -4,6 +4,9 @@ from pathlib import Path
 from typing import Dict, List, Tuple
 import random
 import csv
+import json
+import math
+from collections import OrderedDict
 
 
 def find_target_folders(root_dir: Path, pattern: str) -> List[Path]:
@@ -129,6 +132,16 @@ def extract_values_from_log(log_file_path: Path) -> Dict:
     return result
 
 
+def extract_values_from_config(config_file_path: Path) -> Dict:
+    result = {}
+    with open(config_file_path, "r") as config_file:
+        config = json.load(config_file)
+    result["cpu_num"] = len(config["system"]["cpu"]) - 1  # 1 GPU
+    result["cu_num"] = len(config["system"]["cpu"][-1]["CUs"])
+
+    return result
+
+
 def extract_power(
     parent_dir: Path, scale_cpu: float, scale_gpu: float
 ) -> Dict[str, float]:
@@ -154,3 +167,135 @@ def extract_power(
     }
 
     return result
+
+
+def _split_stats_blocks(stats_file_path: Path):
+    blocks = []
+    current = []
+    in_block = False
+
+    with open(stats_file_path, "r") as f:
+        for line in f:
+            if line.startswith("---------- Begin Simulation Statistics"):
+                if current:
+                    blocks.append(current)
+                    current = []
+                in_block = True
+                continue
+            if line.startswith("---------- End Simulation Statistics"):
+                if current:
+                    blocks.append(current)
+                    current = []
+                in_block = False
+                continue
+
+            if in_block:
+                current.append(line)
+
+    if current:
+        blocks.append(current)
+
+    # Fallback: treat whole file as one block if no markers exist.
+    if not blocks:
+        with open(stats_file_path, "r") as f:
+            blocks = [f.readlines()]
+
+    return blocks
+
+
+def _parse_stats_block(lines):
+    stats = {}
+    pattern = re.compile(r"^([A-Za-z0-9_.:-]+)\s+([0-9eE+\-\.]+)\s+#.*$")
+    for line in lines:
+        m = pattern.match(line.strip())
+        if m:
+            key = m.group(1)
+            val = m.group(2)
+            try:
+                stats[key] = int(val)
+            except ValueError:
+                stats[key] = float(val)
+    return stats
+
+
+def extract_transient_ips(
+    stats_file_path: Path,
+    cpu_num: int,
+    cu_num: int,
+):
+    """
+    Returns a dict with one entry per interval:
+      - cpu0..cpu3 IPS
+      - gpu_cu0..gpu_cuN IPS
+      - time_s (cumulative end time of each interval)
+      - interval_s
+    """
+    cpu_prefixes = [f"system.cpu{i}" for i in range(cpu_num)]
+    gpu_prefixes = [f"system.cpu{cpu_num}.CUs{i}" for i in range(cu_num)]
+
+    blocks = _split_stats_blocks(stats_file_path)
+    parsed = [_parse_stats_block(block) for block in blocks]
+
+    results = []
+    cumulative_s = 0.0
+
+    for stats in parsed:
+        interval_s = stats.get("simSeconds", None)
+        if interval_s is None:
+            sim_ticks = stats.get("simTicks", None)
+            interval_s = sim_ticks / 1e12 if sim_ticks is not None else None
+
+        row = OrderedDict()
+        row["interval_s"] = interval_s
+
+        # CPU IPS
+        for cpu_prefix in cpu_prefixes:
+            ipc = (
+                stats[cpu_prefix + ".ipc"]
+                if cpu_prefix + ".ipc" in stats
+                else None
+            )
+            cycles = (
+                stats[cpu_prefix + ".numCycles"]
+                if cpu_prefix + ".numCycles" in stats
+                else None
+            )
+            insts = (
+                (ipc * cycles)
+                if ipc is not None and cycles is not None
+                else None
+            )
+            row[cpu_prefix] = (
+                (insts / interval_s)
+                if insts is not None and interval_s is not None
+                else None
+            )
+
+        # GPU CU IPS
+        for gpu_prefix in gpu_prefixes:
+            ipc = (
+                stats[gpu_prefix + ".ipc"]
+                if gpu_prefix + ".ipc" in stats
+                else None
+            )
+            cycles = (
+                stats[gpu_prefix + ".totalCycles"]
+                if gpu_prefix + ".totalCycles" in stats
+                else None
+            )
+            insts = (
+                (ipc * cycles)
+                if ipc is not None and cycles is not None
+                else None
+            )
+            row[gpu_prefix] = (
+                (insts / interval_s)
+                if insts is not None and interval_s is not None
+                else None
+            )
+
+        cumulative_s += interval_s if interval_s is not None else 0.0
+        row["time_s"] = cumulative_s
+        results.append(row)
+
+    return results, cpu_prefixes, gpu_prefixes

@@ -469,6 +469,12 @@ parser.add_argument(
     default="",
     help="Floorplan latency profile values in string format",
 )
+parser.add_argument(
+    "--transient-window-ticks",
+    type=int,
+    default=0,
+    help="If >0, dump+reset stats every N ticks for transient IPS analysis",
+)
 # add by zyh: end
 
 Ruby.define_options(parser)
@@ -1088,7 +1094,9 @@ else:
     maxtick = m5.MaxTick
 
 # Benchmarks support work item annotations
-Simulation.setWorkCountOptions(system, args)
+# added by zyh: begin
+# Simulation.setWorkCountOptions(system, args)
+# added by zyh: end
 
 # Checkpointing is not supported by APU model
 if args.checkpoint_dir != None or args.checkpoint_restore != None:
@@ -1105,45 +1113,71 @@ host_cpu.workload[0].map(0x10000000, 0x200000000, 65536)
 if args.fast_forward:
     print("Switch at instruction count: %d" % cpu_list[0].max_insts_any_thread)
 
-exit_event = m5.simulate(maxtick)
+# added by zyh: begin
+# exit_event = m5.simulate(maxtick)
+window = args.transient_window_ticks
+next_window_tick = m5.curTick() + window if window > 0 else None
 
 while True:
-    if (
-        exit_event.getCause() == "m5_exit instruction encountered"
-        or exit_event.getCause() == "user interrupt received"
-        or exit_event.getCause() == "simulate() limit reached"
-        or "exiting with last active thread context" in exit_event.getCause()
-    ):
-        print(f"breaking loop due to: {exit_event.getCause()}.")
+    remaining = maxtick - m5.curTick()
+    if remaining <= 0:
+        # Reached max tick budget
+        exit_event = m5.simulate(0)
         break
-    elif "checkpoint" in exit_event.getCause():
+
+    run_ticks = remaining
+    periodic_boundary = False
+
+    if next_window_tick is not None:
+        to_boundary = next_window_tick - m5.curTick()
+        if to_boundary > 0 and to_boundary < run_ticks:
+            run_ticks = to_boundary
+            periodic_boundary = True
+
+    exit_event = m5.simulate(run_ticks)
+    cause = exit_event.getCause()
+
+    # Periodic dump/reset boundary (non-terminal)
+    if periodic_boundary and cause == "simulate() limit reached":
+        print(f"[transient] dump/reset at tick {m5.curTick()}")
+        m5.stats.dump()
+        m5.stats.reset()
+        next_window_tick += window
+        continue
+
+    if (
+        cause == "m5_exit instruction encountered"
+        or cause == "user interrupt received"
+        or cause == "simulate() limit reached"
+        or "exiting with last active thread context" in cause
+    ):
+        print(f"breaking loop due to: {cause}.")
+        break
+    elif "checkpoint" in cause:
         assert args.checkpoint_dir is not None
         m5.checkpoint(args.checkpoint_dir)
         print("breaking loop with checkpoint")
         break
-    elif "GPU Kernel Completed" in exit_event.getCause():
-        # modified by zyh: begin
+    elif "GPU Kernel Completed" in cause:
         print("GPU Kernel Completed")
         # print("GPU Kernel Completed dump and reset")
         # m5.stats.dump()
         # m5.stats.reset()
-        # modified by zyh: end
-    elif "GPU Blit Kernel Completed" in exit_event.getCause():
+    elif "GPU Blit Kernel Completed" in cause:
         print("GPU Blit Kernel Completed dump and reset")
         m5.stats.dump()
         m5.stats.reset()
-    elif "workbegin" in exit_event.getCause():
+    elif "workbegin" in cause and next_window_tick is None:
         print("m5 work begin dump and reset")
         m5.stats.dump()
         m5.stats.reset()
-    elif "workend" in exit_event.getCause():
+    elif "workend" in cause and next_window_tick is None:
         print("m5 work end dump and reset")
         m5.stats.dump()
         m5.stats.reset()
     else:
-        print(f"Unknown exit event: {exit_event.getCause()}. Continuing...")
-
-    exit_event = m5.simulate(maxtick - m5.curTick())
+        print(f"Unknown exit event: {cause}. Continuing...")
+# added by zyh: end
 
 if args.fast_forward:
     if exit_event.getCause() == "a thread reached the max instruction count":

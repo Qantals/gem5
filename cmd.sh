@@ -38,29 +38,31 @@
 # --maxtime 1 \
 
 # apu_se.py
-OUTPUT_DIR=m5out_gpuFreq/fw/freq4.0-1.0-3.0lat6-6-6-6-6
+OUTPUT_DIR=m5out_dump_sleepMutex/apu_eval
 mkdir -p "$OUTPUT_DIR"
 # cp latency.txt "$OUTPUT_DIR"
 
 ./build/VEGA_X86/gem5.fast \
 -d "$OUTPUT_DIR" \
 configs/example/apu_se.py \
+--transient-window-ticks 1000000000 \
 --cpu-type X86O3CPU \
 -n 4 \
---CPUClock 4.0GHz \
---gpu-clock 1.0GHz \
---ruby-clock 3.0GHz \
+--CPUClock 3.71GHz \
+--gpu-clock 1.8GHz \
+--ruby-clock 3.5GHz \
 --network garnet \
---link-width-bits 64 \
+--link-width-bits 128 \
 --chiplet-topo \
---latency-val=6,6,6,6,6 \
+--latency-val=9,5,5,4,5 \
 --chiplet-clock-domain \
 --chiplet-cdc \
 --mem-size 8GiB \
 --mem-type HBM_2000_4H_1x64 \
 --num-dirs 4 \
---benchmark-root=gem5-resources/src/gpu/pannotia/fw/bin -c fw_hip.gem5 --options="-f pannotia/dataset/floydwarshall/256_16384.gr -m default" \
+-c gem5-resources/src/gpu/heterosync/bin/allSyncPrims-1kernel --options="sleepMutex 10 8 2" \
 > "${OUTPUT_DIR}/print.log" 2>&1 &
 
 # --benchmark-root=gem5-resources/src/gpu/pannotia/fw/bin -c fw_hip.gem5 --options="-f pannotia/dataset/floydwarshall/256_16384.gr -m default" \
+# -c gem5-resources/src/gpu/heterosync/bin/allSyncPrims-1kernel --options="sleepMutex 10 8 2" \
 # --latency-path latency.txt \
