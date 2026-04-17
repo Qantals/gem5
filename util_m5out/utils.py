@@ -85,7 +85,11 @@ def extract_values_from_stats(stats_file_path: Path, perf_unit: str) -> Dict:
     hostMinutes = hostSeconds / 60 if hostSeconds is not None else None
     prop_gpu = shaderActiveTicks / simTicks if simTicks is not None else None
     prop_cpu = 1 - prop_gpu if prop_gpu is not None else None
-    intv_dram = simTicks / bursts if bursts is not None else None
+    intv_dram = (
+        bursts / simSeconds / 1e6
+        if bursts is not None and simSeconds is not None
+        else None
+    )
     mips = simInsts / simSeconds / 1e6 if simSeconds is not None else None
     ms = simSeconds * 1e3 if simSeconds is not None else None
     if perf_unit == "mips":
