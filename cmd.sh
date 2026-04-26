@@ -29,6 +29,7 @@
 # --benchmark-root=gem5-resources/src/gpu/pannotia/pagerank/bin -c pagerank_spmv.gem5 --options="coAuthorsDBLP.graph 1" \
 # --benchmark-root=gem5-resources/src/gpu/pannotia/pagerank/bin -c pagerank.gem5 --options="coAuthorsDBLP.graph 1" \
 # --benchmark-root=gem5-resources/src/gpu/pannotia/sssp/bin -c sssp.gem5 --options="pannotia/dataset/bc/1k_128k.gr 0" \
+# --benchmark-root=gem5-resources/src/gpu/pannotia/sssp/bin -c sssp_ell.gem5 --options="pannotia/dataset/bc/1k_128k.gr 0" \
 
 
 # --num-compute-units 40 \
@@ -36,7 +37,7 @@
 # --maxtime 1 \
 
 # apu_se.py
-OUTPUT_DIR=m5out_transient_pannotia/bc
+OUTPUT_DIR=m5out_transient_pannotia/fw_mmap
 mkdir -p "$OUTPUT_DIR"
 
 ./build/VEGA_X86/gem5.fast \
@@ -57,12 +58,14 @@ configs/example/apu_se.py \
 --mem-size 8GiB \
 --mem-type HBM_2000_4H_1x64 \
 --num-dirs 4 \
---benchmark-root=gem5-resources/src/gpu/pannotia/bc/bin -c bc.gem5 --options="pannotia/dataset/floydwarshall/256_16384.gr" \
+--benchmark-root=gem5-resources/src/gpu/pannotia/fw/bin -c fw_hip.gem5 --options="-f pannotia/dataset/floydwarshall/256_16384.gr -m usemmap" \
 > "${OUTPUT_DIR}/print.log" 2>&1 &
 
 # m5out_transient_pannotia
 # freq4.0-2.0-3.5lat1-1-1-1-1link-width-bits128
 # pannotia/dataset/floydwarshall/256_16384.gr
 # --benchmark-root=gem5-resources/src/gpu/pannotia/fw/bin -c fw_hip.gem5 --options="-f pannotia/dataset/floydwarshall/256_16384.gr -m default" \
+# --benchmark-root=gem5-resources/src/gpu/pannotia/fw/bin -c fw_hip.gem5 --options="-f pannotia/dataset/floydwarshall/256_16384.gr -m usemmap" \
 # --benchmark-root=gem5-resources/src/gpu/pannotia/sssp/bin -c sssp.gem5 --options="pannotia/dataset/floydwarshall/256_16384.gr 0" \
+# --benchmark-root=gem5-resources/src/gpu/pannotia/sssp/bin -c sssp_ell.gem5 --options="pannotia/dataset/floydwarshall/256_16384.gr 0" \
 # --benchmark-root=gem5-resources/src/gpu/pannotia/bc/bin -c bc.gem5 --options="pannotia/dataset/floydwarshall/256_16384.gr" \
