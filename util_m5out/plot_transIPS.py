@@ -4,7 +4,11 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from utils import extract_transient_ips, extract_values_from_config
+from utils import (
+    extract_transient_ips,
+    extract_values_from_config,
+    find_target_folders,
+)
 
 
 def plot_transIPS(
@@ -51,9 +55,10 @@ def plot_transIPS(
 
 
 if __name__ == "__main__":
-    root_path = Path("m5out_dump_sleepMutex/apu_eval")
-    stats_file = root_path / Path("stats.txt")
-    config_file = root_path / Path("config.json")
-    out = root_path / Path("transient_ips.png")
-    use_time_axis = True
-    plot_transIPS(stats_file, config_file, out, use_time_axis)
+    root_path = Path("m5out_transient_fw/linkwidth")
+    for folder in find_target_folders(root_path, ""):
+        stats_file = folder / Path("stats.txt")
+        config_file = folder / Path("config.json")
+        out = folder / Path("transient_ips.png")
+        use_time_axis = True
+        plot_transIPS(stats_file, config_file, out, use_time_axis)
