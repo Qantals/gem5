@@ -11,7 +11,7 @@ from typing import List, Tuple, Set
 
 import numpy as np
 
-script_root = Path(__file__).resolve().parent
+script_root = Path(__file__).resolve().parent.parent
 
 
 def load_exist_seq(results_file):
@@ -199,13 +199,13 @@ def run_gem5(input_seqs, freq_num, output_dir_parent, max_workers):
             "HBM_2000_4H_1x64",
             "--num-dirs",
             "4",
-            # "--benchmark-root=gem5-resources/src/gpu/pannotia/fw/bin",
-            # "-c",
-            # "fw_hip.gem5",
-            # "--options=-f pannotia/dataset/floydwarshall/256_16384.gr -m default",
+            "--benchmark-root=gem5-resources/src/gpu/pannotia/fw/bin",
             "-c",
-            "gem5-resources/src/gpu/heterosync/bin/allSyncPrims-1kernel",
-            "--options=sleepMutex 10 8 2",
+            "fw_hip.gem5",
+            "--options=-f pannotia/dataset/floydwarshall/256_16384.gr -m default",
+            # "-c",
+            # "gem5-resources/src/gpu/heterosync/bin/allSyncPrims-1kernel",
+            # "--options=sleepMutex 10 8 2",
         ]
 
         cmd_docker = [
@@ -245,7 +245,7 @@ def run_gem5(input_seqs, freq_num, output_dir_parent, max_workers):
 
 def dataset_gen():
 
-    output_dir = Path("m5out_movFreq")
+    output_dir = Path("m5out_fw128_movLat")
     results_file = output_dir / "results.csv"
     lat_min, lat_max = 3, 11
     lat_step = 4
@@ -256,24 +256,24 @@ def dataset_gen():
     # generated = shuffle_seq(num_gen_latency, lat_min, lat_max, results_file)
 
     freq = (3.0, 2.0, 3.5)
-    # generated = interpolation_lat(
-    #     lat_min, lat_max, lat_step, lat_num, freq, results_file
-    # )
-
-    generated = interpolation_freq(
-        freq_cpu_min=1.0,
-        freq_cpu_max=4.0,
-        freq_cpu_step=0.5,
-        freq_gpu_min=1.0,
-        freq_gpu_max=3.0,
-        freq_gpu_step=0.5,
-        freq_ruby=3.5,
-        lat=(1, 1, 1, 1, 1),
-        results_file=results_file,
+    generated = interpolation_lat(
+        lat_min, lat_max, lat_step, lat_num, freq, results_file
     )
 
+    # generated = interpolation_freq(
+    #     freq_cpu_min=1.0,
+    #     freq_cpu_max=4.0,
+    #     freq_cpu_step=0.5,
+    #     freq_gpu_min=1.0,
+    #     freq_gpu_max=3.0,
+    #     freq_gpu_step=0.5,
+    #     freq_ruby=3.5,
+    #     lat=(1, 1, 1, 1, 1),
+    #     results_file=results_file,
+    # )
+
     print(f"len: {len(generated)}\n generated: {generated}")
-    run_gem5(generated, freq_num, output_dir, 10)
+    run_gem5(generated, freq_num, output_dir, 6)
 
 
 if __name__ == "__main__":
