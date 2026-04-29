@@ -11,6 +11,8 @@ from typing import List, Tuple, Set
 
 import numpy as np
 
+script_root = Path(__file__).resolve().parent
+
 
 def load_exist_seq(results_file):
     seqs_exist = set()
@@ -213,7 +215,7 @@ def run_gem5(input_seqs, freq_num, output_dir_parent, max_workers):
             "-v",
             f"{os.path.expanduser('~')}/.cache:{os.path.expanduser('~')}/.cache",
             "-v",
-            f"/home/share/HDstorage/{os.environ.get('USER')}:/home/share/HDstorage/{os.environ.get('USER')}",
+            f"{script_root}:{script_root}",
             # "-v",
             # f"{os.path.expanduser('~')}/Documents:{os.path.expanduser('~')}/Documents",
             "--user",

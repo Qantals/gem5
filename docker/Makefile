@@ -30,7 +30,7 @@ run-gem5:
 		--device /dev/kvm \
 		--cap-add=CAP_PERFMON \
 		-v "${HOME}/.cache:${HOME}/.cache" \
-		-v "/home/share/HDstorage/${USER}:/home/share/HDstorage/${USER}" \
+		-v "${PWD}/..:${PWD}/.." \
 		--user $(shell id -u):$(shell id -g) \
 		--group-add $(shell getent group kvm | cut -d: -f3) \
 		--group-add $(shell getent group libvirt | cut -d: -f3) \
@@ -42,7 +42,7 @@ run-gem5:
 run-gpufs:
 	docker run --rm -it \
 		-v "${HOME}/.cache:${HOME}/.cache" \
-		-v "/home/share/HDstorage/${USER}:/home/share/HDstorage/${USER}" \
+		-v "${PWD}/..:${PWD}/.." \
 		--user $(shell id -u):$(shell id -g) \
 		-w "${PWD}/../gem5-resources/src/gpu/square" \
 		-e HOME \
@@ -51,7 +51,7 @@ run-gpufs:
 run-gcngpu:
 	docker run --rm -it \
 		-v "${HOME}/.cache:${HOME}/.cache" \
-		-v "/home/share/HDstorage/${USER}:/home/share/HDstorage/${USER}" \
+		-v "${PWD}/..:${PWD}/.." \
 		--user $(shell id -u):$(shell id -g) \
 		-w "${PWD}/.." \
 		-e GEM5_RESOURCE_DIR \
