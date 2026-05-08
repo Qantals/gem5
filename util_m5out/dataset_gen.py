@@ -134,6 +134,68 @@ def interpolation_freq(
     return generated
 
 
+def interpolation_freq_lat(
+    freq_cpu_min: float,
+    freq_cpu_max: float,
+    freq_cpu_step: float,
+    freq_gpu_min: float,
+    freq_gpu_max: float,
+    freq_gpu_step: float,
+    freq_ruby: float,
+    lat_min: int,
+    lat_max: int,
+    lat_num: int,
+    lat_samples: int,
+    results_file,
+):
+    gen_existing = load_exist_seq(results_file)
+    generated = set()
+
+    freq_cpu = [
+        round(float(x), 1)
+        for x in np.arange(
+            freq_cpu_min, freq_cpu_max + freq_cpu_step, freq_cpu_step
+        )
+    ]
+    if freq_cpu[-1] != freq_cpu_max:
+        freq_cpu.append(float(freq_cpu_max))
+    freq_gpu = [
+        round(float(x), 1)
+        for x in np.arange(
+            freq_gpu_min, freq_gpu_max + freq_gpu_step, freq_gpu_step
+        )
+    ]
+    if freq_gpu[-1] != freq_gpu_max:
+        freq_gpu.append(float(freq_gpu_max))
+    frequencies = list(itertools.product(freq_cpu, freq_gpu))
+    frequencies = [
+        (float(freq[0]), float(freq[1]), float(freq_ruby))
+        for freq in frequencies
+    ]
+
+    raw_latencies = latin_hypercube_samples(
+        n_samples=lat_samples,
+        n_dim=lat_num,
+        low=lat_min,
+        high=lat_max,
+    )
+    latencies = [
+        tuple(coerce_latencies(sample, lat_min, lat_max))
+        for sample in raw_latencies
+    ]
+
+    for freq in frequencies:
+        for latency in latencies:
+            gen_candidate = tuple(freq + latency)
+            if (
+                gen_candidate not in gen_existing
+                and gen_candidate not in generated
+            ):
+                generated.add(gen_candidate)
+
+    return generated
+
+
 def step_same_lat(
     lat_min, lat_max, lat_step, lat_num, freq_candidate, results_file
 ):
@@ -155,6 +217,49 @@ def step_same_lat(
                 generated.add(gen_candidate)
 
     return generated
+
+
+def latin_hypercube_samples(
+    n_samples: int,
+    n_dim: int,
+    low: float,
+    high: float,
+) -> List[List[float]]:
+    rng = random.Random(None)
+    if n_samples <= 0:
+        raise ValueError("Latin hypercube sample count must be > 0")
+    if n_dim <= 0:
+        raise ValueError("Latin hypercube dimension must be > 0")
+    if low >= high:
+        raise ValueError("Latin hypercube range must satisfy low < high")
+
+    samples = [[0.0 for _ in range(n_dim)] for _ in range(n_samples)]
+    span = high - low
+    for dim in range(n_dim):
+        points = [
+            rng.uniform(i / n_samples, (i + 1) / n_samples)
+            for i in range(n_samples)
+        ]
+        rng.shuffle(points)
+        for idx, value in enumerate(points):
+            samples[idx][dim] = low + value * span
+    return samples
+
+
+def coerce_latencies(
+    raw: List[float],
+    lat_min: int,
+    lat_max: int,
+) -> List[int]:
+    latencies: List[int] = []
+    for value in raw:
+        rounded = int(round(value))
+        if rounded < lat_min:
+            rounded = lat_min
+        elif rounded > lat_max:
+            rounded = lat_max
+        latencies.append(rounded)
+    return latencies
 
 
 def run_gem5(input_seqs, freq_num, output_dir_parent, max_workers):
@@ -245,7 +350,7 @@ def run_gem5(input_seqs, freq_num, output_dir_parent, max_workers):
 
 def dataset_gen():
 
-    output_dir = Path("m5out_fw128_movLat")
+    output_dir = Path("m5out_power_model")
     results_file = output_dir / "results.csv"
     lat_min, lat_max = 3, 11
     lat_step = 4
@@ -256,9 +361,9 @@ def dataset_gen():
     # generated = shuffle_seq(num_gen_latency, lat_min, lat_max, results_file)
 
     freq = (3.0, 2.0, 3.5)
-    generated = interpolation_lat(
-        lat_min, lat_max, lat_step, lat_num, freq, results_file
-    )
+    # generated = interpolation_lat(
+    #     lat_min, lat_max, lat_step, lat_num, freq, results_file
+    # )
 
     # generated = interpolation_freq(
     #     freq_cpu_min=1.0,
@@ -271,6 +376,22 @@ def dataset_gen():
     #     lat=(1, 1, 1, 1, 1),
     #     results_file=results_file,
     # )
+
+    num_lat_samples = 10
+    generated = interpolation_freq_lat(
+        freq_cpu_min=2.5,
+        freq_cpu_max=4.5,
+        freq_cpu_step=0.5,
+        freq_gpu_min=1.0,
+        freq_gpu_max=2.5,
+        freq_gpu_step=0.5,
+        freq_ruby=3.5,
+        lat_min=lat_min,
+        lat_max=lat_max,
+        lat_num=lat_num,
+        lat_samples=num_lat_samples,
+        results_file=results_file,
+    )
 
     print(f"len: {len(generated)}\n generated: {generated}")
     run_gem5(generated, freq_num, output_dir, 6)

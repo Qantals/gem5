@@ -39,7 +39,7 @@
 # --maxtime 1 \
 
 # apu_se.py
-OUTPUT_DIR=m5out_transient_square-long
+OUTPUT_DIR=m5out_ckpt
 mkdir -p "$OUTPUT_DIR"
 
 ./build/VEGA_X86/gem5.fast \
@@ -61,7 +61,7 @@ configs/example/apu_se.py \
 --mem-size 8GiB \
 --mem-type HBM_2000_4H_1x64 \
 --num-dirs 4 \
--c gem5-resources/src/gpu/square-longrun/bin/square \
+-c gem5-resources/src/gpu/square-longrun/bin/square-longrun --options="10000000 1 1" \
 > "${OUTPUT_DIR}/print.log" 2>&1 &
 
 # m5out_transient_pannotia
@@ -72,7 +72,8 @@ configs/example/apu_se.py \
 # --benchmark-root=gem5-resources/src/gpu/pannotia/pagerank/bin -c pagerank.gem5 --options="pannotia/dataset/pagerank/coAuthorsDBLP.graph 1" \
 # --benchmark-root=gem5-resources/src/gpu/pannotia/pagerank/bin -c pagerank_spmv.gem5 --options="pannotia/dataset/pagerank/coAuthorsDBLP.graph 1" \
 # --benchmark-root=gem5-resources/src/gpu/pannotia/sssp/bin -c sssp.gem5 --options="pannotia/dataset/bc/1k_128k.gr 0" \
-# -c gem5-resources/src/examples/matrix-multiply-pthread/matrix-multiply --options="1 3"\
-
-# -c gem5-resources/src/gpu/square-longrun/bin/square \
-# -c gem5-resources/src/gpu/hip-samples/bin/MatrixTranspose \
+# -c gem5-resources/src/examples/matrix-multiply-pthread/matrix-multiply-pthread --options="1 3"\
+# -c gem5-resources/src/examples/matrix-multiply-longrun/matrix-multiply-longrun --options="1 3"\
+# -c gem5-resources/src/gpu/square-longrun/bin/square-longrun --options="10000000 1 1" \
+# -c gem5-resources/src/gpu/hip-samples/bin/MatrixTranspose-longrun --options="5 1" \
+# -c gem5-resources/src/gpu/hip-samples/bin/MatrixMultiply-longrun --options="3 1" \
