@@ -1159,25 +1159,24 @@ while True:
         print("breaking loop with checkpoint")
         break
     elif "GPU Kernel Completed" in cause:
-        # if window > 0:
-        #     print("GPU Kernel Completed dump and reset")
-        #     m5.stats.dump()
-        #     m5.stats.reset()
-        # else:
-        #     print("GPU Kernel Completed")
+        # print("GPU Kernel Completed dump and reset")
+        # m5.stats.dump()
+        # m5.stats.reset()
         print("GPU Kernel Completed")
     elif "GPU Blit Kernel Completed" in cause:
         print("GPU Blit Kernel Completed dump and reset")
         m5.stats.dump()
         m5.stats.reset()
     elif "workbegin" in cause:
-        print("m5 work begin dump and reset")
-        m5.stats.dump()
-        m5.stats.reset()
+        # print("m5 work begin dump and reset")
+        # m5.stats.dump()
+        # m5.stats.reset()
+        print("m5 work begin")
     elif "workend" in cause:
-        print("m5 work end dump and reset")
-        m5.stats.dump()
-        m5.stats.reset()
+        # print("m5 work end dump and reset")
+        # m5.stats.dump()
+        # m5.stats.reset()
+        print("m5 work end")
     else:
         print(f"Unknown exit event: {cause}. Continuing...")
 # added by zyh: end
