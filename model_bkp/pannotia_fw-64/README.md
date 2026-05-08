@@ -1,5 +1,7 @@
 # SA pred model test precision
 
+link-width-bit=64
+
 ## latency_all
 
 degree=4
