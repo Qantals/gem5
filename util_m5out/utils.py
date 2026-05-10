@@ -92,13 +92,17 @@ def extract_values_from_stats(stats_file_path: Path, perf_unit: str) -> Dict:
     )
     mips = simInsts / simSeconds / 1e6 if simSeconds is not None else None
     ms = simSeconds * 1e3 if simSeconds is not None else None
+
     if perf_unit == "mips":
         perf = mips
     elif perf_unit == "ms":
         perf = ms
     else:
         raise ValueError(f"Unsupported performance unit: {perf_unit}")
-
+    if perf is None:
+        raise ValueError(
+            f"perf is required to compute performance at {stats_file_path}"
+        )
     result = {
         "prop_cpu": prop_cpu,
         "prop_gpu": prop_gpu,

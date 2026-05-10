@@ -1164,9 +1164,10 @@ while True:
         # m5.stats.reset()
         print("GPU Kernel Completed")
     elif "GPU Blit Kernel Completed" in cause:
-        print("GPU Blit Kernel Completed dump and reset")
-        m5.stats.dump()
-        m5.stats.reset()
+        # print("GPU Blit Kernel Completed dump and reset")
+        # m5.stats.dump()
+        # m5.stats.reset()
+        print("GPU Blit Kernel Completed")
     elif "workbegin" in cause:
         # print("m5 work begin dump and reset")
         # m5.stats.dump()
