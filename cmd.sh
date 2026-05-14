@@ -37,23 +37,23 @@
 # --num-compute-units 40 \
 # --sa-per-complex 10 \
 # --maxtime 1 \
+# --transient-window-ticks 1000000000 \
 
 # apu_se.py
-OUTPUT_DIR=m5out_ckpt
+OUTPUT_DIR=m5out_steady_trans/trans
 mkdir -p "$OUTPUT_DIR"
 
 ./build/VEGA_X86/gem5.fast \
 -d "$OUTPUT_DIR" \
 configs/example/apu_se.py \
 --transient-window-ticks 1000000000 \
---maxtime 1.5 \
 --cpu-type X86O3CPU \
 -n 4 \
---CPUClock 4.0GHz \
---gpu-clock 2.0GHz \
+--CPUClock 3.0GHz \
+--gpu-clock 1.0GHz \
 --ruby-clock 3.5GHz \
 --network garnet \
---link-width-bits 128 \
+--link-width-bits 512 \
 --chiplet-topo \
 --latency-val=1,1,1,1,1 \
 --chiplet-clock-domain \
@@ -61,11 +61,11 @@ configs/example/apu_se.py \
 --mem-size 8GiB \
 --mem-type HBM_2000_4H_1x64 \
 --num-dirs 4 \
--c gem5-resources/src/gpu/square-longrun/bin/square-longrun --options="10000000 1 1" \
+--benchmark-root=gem5-resources/src/gpu/pannotia/fw/bin -c fw_hip.gem5 --options="-f pannotia/dataset/floydwarshall/256_16384.gr -m default" \
 > "${OUTPUT_DIR}/print.log" 2>&1 &
 
 # m5out_transient_pannotia
-# freq4.0-2.0-3.5lat1-1-1-1-1link-width-bits128
+# freq4.0-2.0-3.5lat1-1-1-1-1link-width-bits512
 # --benchmark-root=gem5-resources/src/gpu/pannotia/bc/bin -c bc.gem5 --options="pannotia/dataset/bc/1k_128k.gr" \
 # --benchmark-root=gem5-resources/src/gpu/pannotia/fw/bin -c fw_hip.gem5 --options="-f pannotia/dataset/floydwarshall/256_16384.gr -m default" \
 # --benchmark-root=gem5-resources/src/gpu/pannotia/fw/bin -c fw_hip.gem5 --options="-f pannotia/dataset/floydwarshall/256_16384.gr -m usemmap" \
@@ -76,4 +76,4 @@ configs/example/apu_se.py \
 # -c gem5-resources/src/examples/matrix-multiply-longrun/matrix-multiply-longrun --options="1 3"\
 # -c gem5-resources/src/gpu/square-longrun/bin/square-longrun --options="10000000 1 1" \
 # -c gem5-resources/src/gpu/hip-samples/bin/MatrixTranspose-longrun --options="5 1" \
-# -c gem5-resources/src/gpu/hip-samples/bin/MatrixMultiply-longrun --options="3 1" \
+# -c gem5-resources/src/gpu/hip-samples/bin/MatrixMultiply-longrun --options="2 1" \

@@ -225,7 +225,7 @@ def latin_hypercube_samples(
     low: float,
     high: float,
 ) -> List[List[float]]:
-    rng = random.Random(None)
+    rng = random.Random(42)
     if n_samples <= 0:
         raise ValueError("Latin hypercube sample count must be > 0")
     if n_dim <= 0:
@@ -293,7 +293,7 @@ def run_gem5(input_seqs, freq_num, output_dir_parent, max_workers):
             "--network",
             "garnet",
             "--link-width-bits",
-            "128",
+            "512",
             "--chiplet-topo",
             "--latency-val={}".format(latency_str_cmd),
             "--chiplet-clock-domain",
@@ -350,7 +350,7 @@ def run_gem5(input_seqs, freq_num, output_dir_parent, max_workers):
 
 def dataset_gen():
 
-    output_dir = Path("m5out_power_model")
+    output_dir = Path("m5out_power_model-512")
     results_file = output_dir / "results.csv"
     lat_min, lat_max = 3, 11
     lat_step = 4
@@ -368,23 +368,23 @@ def dataset_gen():
     # generated = interpolation_freq(
     #     freq_cpu_min=1.0,
     #     freq_cpu_max=4.0,
-    #     freq_cpu_step=0.5,
+    #     freq_cpu_step=0.1,
     #     freq_gpu_min=1.0,
-    #     freq_gpu_max=3.0,
+    #     freq_gpu_max=1.0,
     #     freq_gpu_step=0.5,
     #     freq_ruby=3.5,
     #     lat=(1, 1, 1, 1, 1),
     #     results_file=results_file,
     # )
 
-    num_lat_samples = 10
+    num_lat_samples = 5
     generated = interpolation_freq_lat(
         freq_cpu_min=2.5,
-        freq_cpu_max=4.5,
+        freq_cpu_max=4.0,
         freq_cpu_step=0.5,
-        freq_gpu_min=1.0,
-        freq_gpu_max=2.5,
-        freq_gpu_step=0.5,
+        freq_gpu_min=0.5,
+        freq_gpu_max=1.5,
+        freq_gpu_step=0.25,
         freq_ruby=3.5,
         lat_min=lat_min,
         lat_max=lat_max,
