@@ -1185,21 +1185,16 @@ while True:
             if use_work_item_window:
                 work_item_active = True
                 next_window_tick = m5.curTick() + window
-                print("m5 work begin")
-            else:
-                print("m5 work begin dump and reset")
-                m5.stats.dump()
-                m5.stats.reset()
+            print("m5 work begin dump and reset")
+            m5.stats.dump()
+            m5.stats.reset()
         else:
             print("m5 work begin")
     elif "workend" in cause:
         if args.m5work_dump:
-            if use_work_item_window:
-                print("m5 work end")
-            else:
-                print("m5 work end dump and reset")
-                m5.stats.dump()
-                m5.stats.reset()
+            print("m5 work end dump and reset")
+            m5.stats.dump()
+            m5.stats.reset()
         else:
             print("m5 work end")
         if use_work_item_window:
