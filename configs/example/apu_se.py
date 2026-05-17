@@ -475,6 +475,12 @@ parser.add_argument(
     default=0,
     help="If >0, dump+reset stats every N ticks for transient IPS analysis",
 )
+parser.add_argument(
+    "--m5work-dump",
+    action="store_true",
+    default=False,
+    help="Use m5ops to dump stats for steady dump",
+)
 # add by zyh: end
 
 Ruby.define_options(parser)
@@ -1169,15 +1175,27 @@ while True:
         # m5.stats.reset()
         print("GPU Blit Kernel Completed")
     elif "workbegin" in cause:
-        # print("m5 work begin dump and reset")
-        # m5.stats.dump()
-        # m5.stats.reset()
-        print("m5 work begin")
+        if args.m5work_dump:
+            if window > 0:
+                raise ValueError(
+                    "m5work_dump should not be used with transient_window_ticks > 0"
+                )
+            print("m5 work begin dump and reset")
+            m5.stats.dump()
+            m5.stats.reset()
+        else:
+            print("m5 work begin")
     elif "workend" in cause:
-        # print("m5 work end dump and reset")
-        # m5.stats.dump()
-        # m5.stats.reset()
-        print("m5 work end")
+        if args.m5work_dump:
+            if window > 0:
+                raise ValueError(
+                    "m5work_dump should not be used with transient_window_ticks > 0"
+                )
+            print("m5 work end dump and reset")
+            m5.stats.dump()
+            m5.stats.reset()
+        else:
+            print("m5 work end")
     else:
         print(f"Unknown exit event: {cause}. Continuing...")
 # added by zyh: end
