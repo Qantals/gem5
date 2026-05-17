@@ -1,1 +1,0 @@
-Run scripts at gem5 dir, not this dir.
