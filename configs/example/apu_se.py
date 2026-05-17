@@ -1122,7 +1122,11 @@ if args.fast_forward:
 # added by zyh: begin
 # exit_event = m5.simulate(maxtick)
 window = args.transient_window_ticks
-next_window_tick = m5.curTick() + window if window > 0 else None
+use_work_item_window = args.m5work_dump and window > 0
+work_item_active = False
+next_window_tick = (
+    m5.curTick() + window if window > 0 and not use_work_item_window else None
+)
 
 while True:
     remaining = maxtick - m5.curTick()
@@ -1134,7 +1138,9 @@ while True:
     run_ticks = remaining
     periodic_boundary = False
 
-    if next_window_tick is not None:
+    if next_window_tick is not None and (
+        not use_work_item_window or work_item_active
+    ):
         to_boundary = next_window_tick - m5.curTick()
         if to_boundary > 0 and to_boundary < run_ticks:
             run_ticks = to_boundary
@@ -1176,26 +1182,29 @@ while True:
         print("GPU Blit Kernel Completed")
     elif "workbegin" in cause:
         if args.m5work_dump:
-            if window > 0:
-                raise ValueError(
-                    "m5work_dump should not be used with transient_window_ticks > 0"
-                )
-            print("m5 work begin dump and reset")
-            m5.stats.dump()
-            m5.stats.reset()
+            if use_work_item_window:
+                work_item_active = True
+                next_window_tick = m5.curTick() + window
+                print("m5 work begin")
+            else:
+                print("m5 work begin dump and reset")
+                m5.stats.dump()
+                m5.stats.reset()
         else:
             print("m5 work begin")
     elif "workend" in cause:
         if args.m5work_dump:
-            if window > 0:
-                raise ValueError(
-                    "m5work_dump should not be used with transient_window_ticks > 0"
-                )
-            print("m5 work end dump and reset")
-            m5.stats.dump()
-            m5.stats.reset()
+            if use_work_item_window:
+                print("m5 work end")
+            else:
+                print("m5 work end dump and reset")
+                m5.stats.dump()
+                m5.stats.reset()
         else:
             print("m5 work end")
+        if use_work_item_window:
+            work_item_active = False
+            next_window_tick = None
     else:
         print(f"Unknown exit event: {cause}. Continuing...")
 # added by zyh: end
