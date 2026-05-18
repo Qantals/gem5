@@ -729,6 +729,9 @@ if fast_forward:
     for i in range(args.num_cpus):
         cpu = CpuClass(
             cpu_id=i,
+            # added by zyh: begin
+            usePerf=False,
+            # added by zyh: end
             clk_domain=SrcClockDomain(
                 clock=args.CPUClock,
                 voltage_domain=VoltageDomain(voltage=args.cpu_voltage),
@@ -929,7 +932,10 @@ system.gpu_clk_domain = SrcClockDomain(
 
 if fast_forward:
     have_kvm_support = "BaseKvmCPU" in globals()
-    if have_kvm_support and get_supported_isas().contains(ISA.X86):
+    # modified by zyh: begin
+    # if have_kvm_support and get_supported_isas().contains(ISA.X86):
+    if have_kvm_support and ISA.X86 in get_supported_isas():
+        # modified by zyh: end
         system.vm = KvmVM()
         system.m5ops_base = 0xFFFF0000
         for i in range(len(host_cpu.workload)):
@@ -1100,9 +1106,7 @@ else:
     maxtick = m5.MaxTick
 
 # Benchmarks support work item annotations
-# added by zyh: begin
-# Simulation.setWorkCountOptions(system, args)
-# added by zyh: end
+Simulation.setWorkCountOptions(system, args)
 
 # Checkpointing is not supported by APU model
 if args.checkpoint_dir != None or args.checkpoint_restore != None:

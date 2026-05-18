@@ -38,6 +38,7 @@
 # --sa-per-complex 10 \
 # --transient-window-ticks 1000000000 \
 # --m5work-dump \
+# --fast-forward-pseudo-op \
 
 # apu_se.py
 OUTPUT_DIR=m5out_test
@@ -47,7 +48,8 @@ mkdir -p "$OUTPUT_DIR"
 -d "$OUTPUT_DIR" \
 configs/example/apu_se.py \
 --transient-window-ticks 1000000000 \
--m 100000000 \
+-m 100000000000 \
+--m5work-dump \
 --cpu-type X86O3CPU \
 -n 4 \
 --CPUClock 3.0GHz \

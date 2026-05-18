@@ -41,18 +41,26 @@ run-gem5:
 
 run-gpufs:
 	docker run --rm -it \
+		--device /dev/kvm \
+		--cap-add=CAP_SYS_ADMIN \
 		-v "${HOME}/.cache:${HOME}/.cache" \
 		-v "${PWD}/..:${PWD}/.." \
 		--user $(shell id -u):$(shell id -g) \
+		--group-add $(shell getent group kvm | cut -d: -f3) \
+		--group-add $(shell getent group libvirt | cut -d: -f3) \
 		-w "${PWD}/../gem5-resources/src/gpu/square" \
 		-e HOME \
 		$(DOCKER_IMAGE_GPUFS)
 
 run-gcngpu:
 	docker run --rm -it \
+		--device /dev/kvm \
+		--cap-add=CAP_SYS_ADMIN \
 		-v "${HOME}/.cache:${HOME}/.cache" \
 		-v "${PWD}/..:${PWD}/.." \
 		--user $(shell id -u):$(shell id -g) \
+		--group-add $(shell getent group kvm | cut -d: -f3) \
+		--group-add $(shell getent group libvirt | cut -d: -f3) \
 		-w "${PWD}/.." \
 		-e GEM5_RESOURCE_DIR \
 		-e HOME \
