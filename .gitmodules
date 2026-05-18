@@ -1,0 +1,7 @@
+[submodule "gem5-resources"]
+	path = gem5-resources
+	url = git@github.com:Qantals/gem5-resources.git
+	branch = test_gpu
+[submodule "pannotia"]
+	path = pannotia
+	url = https://github.com/pannotia/pannotia.git
