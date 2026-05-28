@@ -69,6 +69,13 @@ class ChipletTopo(BaseTopology):
             f"latency: {latency}"
         )
 
+    def _printRouter(self, router, names):
+        print(
+            f"Router id: {router.router_id}, "
+            f"name: {names[router.router_id]}, "
+            f"latency: {router.latency}"
+        )
+
     def makeTopology(self, options, network, IntLink, ExtLink, Router):
         num_routers = 2 * self.num_cores + len(self.dir_nodes)
         num_noi = self.num_cores + len(self.dir_nodes)
@@ -90,15 +97,25 @@ class ChipletTopo(BaseTopology):
             )
 
         # sequence: cpu_noi, gpu_noi, dir0_noi, dir1_noi, dir2_noi, dir3_noi, cpu_noc, gpu_noc
+        print("----------- chiplet latency info begin ------------")
+        print("*** routers ***")
         routers = []
+        router_names = (
+            ["CPU NoI", "GPU NoI"]
+            + [f"Dir{i} NoI" for i in range(len(self.dir_nodes))]
+            + ["CPU NoC", "GPU NoC"]
+        )
+        # TODO: set all routers latency 2
+        router_latencies = [2] * num_routers
         for i in range(num_routers):
-            router = Router(router_id=i, latency=2)
+            router = Router(router_id=i, latency=router_latencies[i])
             if options.chiplet_clock_domain:
                 if i == num_noi + self.label_cpu:
                     router.clk_domain = cpu_clk_domain
                 elif i == num_noi + self.label_gpu:
                     router.clk_domain = gpu_clk_domain
             routers.append(router)
+            self._printRouter(router, router_names)
         network.routers = routers
 
         # load latency from numpy 2D array txt
@@ -110,23 +127,23 @@ class ChipletTopo(BaseTopology):
                     s = line.strip()
                     if s:
                         link_latency.append(list(map(int, s.split())))
-            print("----------- chiplet latency info begin ------------")
         elif options.latency_val:
             idxs1 = [0, 0, 0, 1, 1]
             idxs2 = [1, 2, 3, 4, 5]
             link_latency = [
-                [1 for _ in range(num_routers)] for _ in range(num_routers)
+                [1 for _ in range(num_noi)] for _ in range(num_noi)
             ]
             latency_vals = list(map(int, options.latency_val.split(",")))
             for i in range(5):
                 link_latency[idxs1[i]][idxs2[i]] = link_latency[idxs2[i]][
                     idxs1[i]
                 ] = latency_vals[i]
-            print("----------- chiplet latency info begin ------------")
         else:
             link_latency = [
-                [1 for _ in range(num_routers)] for _ in range(num_routers)
+                [1 for _ in range(num_noi)] for _ in range(num_noi)
             ]
+        # TODO: set edge latency
+        latency_edge = 2
 
         int_links = []
         ext_links = []
@@ -242,7 +259,7 @@ class ChipletTopo(BaseTopology):
         print("*** link for CPU NoC to NoI and GPU NoC to NoI ***")
         src_node = routers[self.label_cpu]
         dst_node = routers[num_noi + self.label_cpu]
-        latency = 1
+        latency = latency_edge
         link_cpu_noi_noc = IntLink(
             link_id=link_int_count,
             src_node=src_node,
@@ -257,7 +274,7 @@ class ChipletTopo(BaseTopology):
 
         src_node = routers[num_noi + self.label_cpu]
         dst_node = routers[self.label_cpu]
-        latency = 1
+        latency = latency_edge
         link_cpu_noc_noi = IntLink(
             link_id=link_int_count,
             src_node=src_node,
@@ -273,7 +290,7 @@ class ChipletTopo(BaseTopology):
         # connect gpu noc and noi
         src_node = routers[self.label_gpu]
         dst_node = routers[num_noi + self.label_gpu]
-        latency = 1
+        latency = latency_edge
         link_gpu_noi_noc = IntLink(
             link_id=link_int_count,
             src_node=src_node,
@@ -288,7 +305,7 @@ class ChipletTopo(BaseTopology):
 
         src_node = routers[num_noi + self.label_gpu]
         dst_node = routers[self.label_gpu]
-        latency = 1
+        latency = latency_edge
         link_gpu_noc_noi = IntLink(
             link_id=link_int_count,
             src_node=src_node,
