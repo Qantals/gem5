@@ -174,26 +174,35 @@ def init_network(options, network, InterfaceClass):
         network.garnet_deadlock_threshold = options.garnet_deadlock_threshold
 
         # Create Bridges and connect them to the corresponding links
+        # added by zyh: serdes_latency and cdc_latency
         for intLink in network.int_links:
             intLink.src_net_bridge = NetworkBridge(
                 link=intLink.network_link,
                 vtype="OBJECT_LINK",
                 width=intLink.src_node.width,
+                serdes_latency=options.serdes_latency,
+                cdc_latency=options.cdc_latency,
             )
             intLink.src_cred_bridge = NetworkBridge(
                 link=intLink.credit_link,
                 vtype="LINK_OBJECT",
                 width=intLink.src_node.width,
+                serdes_latency=options.serdes_latency,
+                cdc_latency=options.cdc_latency,
             )
             intLink.dst_net_bridge = NetworkBridge(
                 link=intLink.network_link,
                 vtype="LINK_OBJECT",
                 width=intLink.dst_node.width,
+                serdes_latency=options.serdes_latency,
+                cdc_latency=options.cdc_latency,
             )
             intLink.dst_cred_bridge = NetworkBridge(
                 link=intLink.credit_link,
                 vtype="OBJECT_LINK",
                 width=intLink.dst_node.width,
+                serdes_latency=options.serdes_latency,
+                cdc_latency=options.cdc_latency,
             )
             # add by zyh: begin
             if options.chiplet_clock_domain:
@@ -211,6 +220,7 @@ def init_network(options, network, InterfaceClass):
                 )
             # add by zyh: end
 
+        # added by zyh: serdes_latency and cdc_latency
         for extLink in network.ext_links:
             ext_net_bridges = []
             ext_net_bridges.append(
@@ -218,6 +228,8 @@ def init_network(options, network, InterfaceClass):
                     link=extLink.network_links[0],
                     vtype="OBJECT_LINK",
                     width=extLink.width,
+                    serdes_latency=options.serdes_latency,
+                    cdc_latency=options.cdc_latency,
                 )
             )
             ext_net_bridges.append(
@@ -225,6 +237,8 @@ def init_network(options, network, InterfaceClass):
                     link=extLink.network_links[1],
                     vtype="LINK_OBJECT",
                     width=extLink.width,
+                    serdes_latency=options.serdes_latency,
+                    cdc_latency=options.cdc_latency,
                 )
             )
             extLink.ext_net_bridge = ext_net_bridges
@@ -235,6 +249,8 @@ def init_network(options, network, InterfaceClass):
                     link=extLink.credit_links[0],
                     vtype="LINK_OBJECT",
                     width=extLink.width,
+                    serdes_latency=options.serdes_latency,
+                    cdc_latency=options.cdc_latency,
                 )
             )
             ext_credit_bridges.append(
@@ -242,6 +258,8 @@ def init_network(options, network, InterfaceClass):
                     link=extLink.credit_links[1],
                     vtype="OBJECT_LINK",
                     width=extLink.width,
+                    serdes_latency=options.serdes_latency,
+                    cdc_latency=options.cdc_latency,
                 )
             )
             extLink.ext_cred_bridge = ext_credit_bridges
@@ -252,6 +270,8 @@ def init_network(options, network, InterfaceClass):
                     link=extLink.network_links[0],
                     vtype="LINK_OBJECT",
                     width=extLink.int_node.width,
+                    serdes_latency=options.serdes_latency,
+                    cdc_latency=options.cdc_latency,
                 )
             )
             int_net_bridges.append(
@@ -259,6 +279,8 @@ def init_network(options, network, InterfaceClass):
                     link=extLink.network_links[1],
                     vtype="OBJECT_LINK",
                     width=extLink.int_node.width,
+                    serdes_latency=options.serdes_latency,
+                    cdc_latency=options.cdc_latency,
                 )
             )
             extLink.int_net_bridge = int_net_bridges
@@ -269,6 +291,8 @@ def init_network(options, network, InterfaceClass):
                     link=extLink.credit_links[0],
                     vtype="OBJECT_LINK",
                     width=extLink.int_node.width,
+                    serdes_latency=options.serdes_latency,
+                    cdc_latency=options.cdc_latency,
                 )
             )
             int_cred_bridges.append(
@@ -276,23 +300,21 @@ def init_network(options, network, InterfaceClass):
                     link=extLink.credit_links[1],
                     vtype="LINK_OBJECT",
                     width=extLink.int_node.width,
+                    serdes_latency=options.serdes_latency,
+                    cdc_latency=options.cdc_latency,
                 )
             )
             extLink.int_cred_bridge = int_cred_bridges
             # add by zyh: begin
             if options.chiplet_clock_domain:
                 for ext_net_bridge in extLink.ext_net_bridge:
-                    ext_net_bridge.clk_domain = (
-                        ext_net_bridge.link.clk_domain
-                    )
+                    ext_net_bridge.clk_domain = ext_net_bridge.link.clk_domain
                 for ext_cred_bridge in extLink.ext_cred_bridge:
                     ext_cred_bridge.clk_domain = (
                         ext_cred_bridge.link.clk_domain
                     )
                 for int_net_bridge in extLink.int_net_bridge:
-                    int_net_bridge.clk_domain = (
-                        int_net_bridge.link.clk_domain
-                    )
+                    int_net_bridge.clk_domain = int_net_bridge.link.clk_domain
                 for int_cred_bridge in extLink.int_cred_bridge:
                     int_cred_bridge.clk_domain = (
                         int_cred_bridge.link.clk_domain

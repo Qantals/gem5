@@ -481,6 +481,18 @@ parser.add_argument(
     default=False,
     help="Use m5ops to dump stats for steady dump",
 )
+parser.add_argument(
+    "--serdes_latency",
+    type=int,
+    default=1,
+    help="Latency of SerDes Unit for NetworkBridge in cycles. Only available if --chiplet-cdc is set.",
+)
+parser.add_argument(
+    "--cdc_latency",
+    type=int,
+    default=1,
+    help="Latency of CDC Unit for NetworkBridge in cycles. Only available if --chiplet-cdc is set.",
+)
 # add by zyh: end
 
 Ruby.define_options(parser)

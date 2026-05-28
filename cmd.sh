@@ -37,35 +37,37 @@
 # --num-compute-units 40 \
 # --sa-per-complex 10 \
 # --transient-window-ticks 1000000000 \
+# -m 1000000000000 \
 # --m5work-dump \
 # --fast-forward-pseudo-op \
 
 # apu_se.py
-OUTPUT_DIR=m5out_test
+OUTPUT_DIR=m5out_test/matMul
 mkdir -p "$OUTPUT_DIR"
 
 ./build/VEGA_X86/gem5.fast \
 -d "$OUTPUT_DIR" \
 configs/example/apu_se.py \
 --transient-window-ticks 1000000000 \
--m 100000000000 \
---m5work-dump \
+-m 1000000000000 \
 --cpu-type X86O3CPU \
 -n 4 \
 --CPUClock 3.0GHz \
---gpu-clock 1.0GHz \
---ruby-clock 3.5GHz \
+--gpu-clock 1.5GHz \
+--ruby-clock 1.0GHz \
 --network garnet \
---link-width-bits 512 \
+--link-width-bits 128 \
 --chiplet-topo \
---latency-val=1,1,1,1,1 \
+--latency-val=4,3,3,3,3 \
 --chiplet-clock-domain \
 --chiplet-cdc \
+--serdes_latency 2 \
 --mem-size 8GiB \
 --mem-type HBM_2000_4H_1x64 \
 --num-dirs 4 \
---benchmark-root=gem5-resources/src/gpu/pannotia/fw/bin -c fw_hip.gem5 --options="-f pannotia/dataset/floydwarshall/256_16384.gr -m default" \
-> "${OUTPUT_DIR}/print.log" 2>&1 &
+-c gem5-resources/src/gpu/hip-samples/bin/MatrixMultiply-longrun --options="1 1" \
+2>&1 | tee "${OUTPUT_DIR}/print.log"
+# > "${OUTPUT_DIR}/print.log" 2>&1 &
 
 # m5out_transient_pannotia
 # freq4.0-2.0-3.5lat1-1-1-1-1link-width-bits512
