@@ -50,6 +50,7 @@ mkdir -p "$OUTPUT_DIR"
 configs/example/apu_se.py \
 --transient-window-ticks 1000000000 \
 -m 1000000000000 \
+--m5work-dump \
 --cpu-type X86O3CPU \
 -n 4 \
 --CPUClock 3.0GHz \
@@ -61,13 +62,12 @@ configs/example/apu_se.py \
 --latency-val=4,3,3,3,3 \
 --chiplet-clock-domain \
 --chiplet-cdc \
---serdes_latency 2 \
+--serdes-latency 2 \
 --mem-size 8GiB \
 --mem-type HBM_2000_4H_1x64 \
 --num-dirs 4 \
--c gem5-resources/src/gpu/hip-samples/bin/MatrixMultiply-longrun --options="1 1" \
-2>&1 | tee "${OUTPUT_DIR}/print.log"
-# > "${OUTPUT_DIR}/print.log" 2>&1 &
+-c gem5-resources/src/gpu/hip-samples/bin/MatrixMultiply-longrun --options="2 1" \
+> "${OUTPUT_DIR}/print.log" 2>&1 &
 
 # m5out_transient_pannotia
 # freq4.0-2.0-3.5lat1-1-1-1-1link-width-bits512
