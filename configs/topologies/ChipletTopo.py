@@ -92,7 +92,7 @@ class ChipletTopo(BaseTopology):
         # sequence: cpu_noi, gpu_noi, dir0_noi, dir1_noi, dir2_noi, dir3_noi, cpu_noc, gpu_noc
         routers = []
         for i in range(num_routers):
-            router = Router(router_id=i)
+            router = Router(router_id=i, latency=2)
             if options.chiplet_clock_domain:
                 if i == num_noi + self.label_cpu:
                     router.clk_domain = cpu_clk_domain
