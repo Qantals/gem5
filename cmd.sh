@@ -66,7 +66,7 @@ configs/example/apu_se.py \
 --mem-size 8GiB \
 --mem-type HBM_2000_4H_1x64 \
 --num-dirs 4 \
--c gem5-resources/src/gpu/hip-samples/bin/MatrixMultiply-longrun --options="2 1" \
+-c gem5-resources/src/gpu/hip-samples/bin/MatrixMultiply-longrun --options="1024 1 1" \
 > "${OUTPUT_DIR}/print.log" 2>&1 &
 
 # m5out_transient_pannotia
@@ -81,4 +81,4 @@ configs/example/apu_se.py \
 # -c gem5-resources/src/examples/matrix-multiply-longrun/matrix-multiply-longrun --options="1 3"\
 # -c gem5-resources/src/gpu/square-longrun/bin/square-longrun --options="10000000 1 1" \
 # -c gem5-resources/src/gpu/hip-samples/bin/MatrixTranspose-longrun --options="5 1" \
-# -c gem5-resources/src/gpu/hip-samples/bin/MatrixMultiply-longrun --options="2 1" \
+# -c gem5-resources/src/gpu/hip-samples/bin/MatrixMultiply-longrun --options="1024 1 1" \
