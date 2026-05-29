@@ -42,14 +42,14 @@
 # --fast-forward-pseudo-op \
 
 # apu_se.py
-OUTPUT_DIR=m5out_test/matMul
+OUTPUT_DIR=m5out_test/copy-512KB
 mkdir -p "$OUTPUT_DIR"
 
 ./build/VEGA_X86/gem5.fast \
 -d "$OUTPUT_DIR" \
 configs/example/apu_se.py \
 --transient-window-ticks 1000000000 \
--m 1000000000000 \
+-m 200000000000 \
 --m5work-dump \
 --cpu-type X86O3CPU \
 -n 4 \
@@ -66,8 +66,9 @@ configs/example/apu_se.py \
 --mem-size 8GiB \
 --mem-type HBM_2000_4H_1x64 \
 --num-dirs 4 \
--c gem5-resources/src/gpu/hip-samples/bin/MatrixMultiply-longrun --options="1024 1 1" \
-> "${OUTPUT_DIR}/print.log" 2>&1 &
+-c gem5-resources/src/gpu/hip-samples/bin/copy-longrun --options="524288 2 2 1" \
+2>&1 | tee "${OUTPUT_DIR}/print.log"
+# > "${OUTPUT_DIR}/print.log" 2>&1 &
 
 # m5out_transient_pannotia
 # freq4.0-2.0-3.5lat1-1-1-1-1link-width-bits512
@@ -81,4 +82,5 @@ configs/example/apu_se.py \
 # -c gem5-resources/src/examples/matrix-multiply-longrun/matrix-multiply-longrun --options="1 3"\
 # -c gem5-resources/src/gpu/square-longrun/bin/square-longrun --options="10000000 1 1" \
 # -c gem5-resources/src/gpu/hip-samples/bin/MatrixTranspose-longrun --options="5 1" \
-# -c gem5-resources/src/gpu/hip-samples/bin/MatrixMultiply-longrun --options="1024 1 1" \
+# -c gem5-resources/src/gpu/hip-samples/bin/MatrixMultiply-longrun --options="256 2 1" \
+# -c gem5-resources/src/gpu/hip-samples/bin/copy-longrun --options="1048576 2 2 1" \
