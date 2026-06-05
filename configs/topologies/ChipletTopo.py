@@ -13,6 +13,7 @@ class ChipletTopo(BaseTopology):
     label_cpu = 0
     label_gpu = 1
     num_cores = 2
+    ROUTER_LATENCY = 1
 
     def __init__(self, options):
         if not options.network == "garnet":
@@ -105,8 +106,8 @@ class ChipletTopo(BaseTopology):
             + [f"Dir{i} NoI" for i in range(len(self.dir_nodes))]
             + ["CPU NoC", "GPU NoC"]
         )
-        # TODO: set all routers latency 2
-        router_latencies = [2] * num_routers
+        # TODO: set all routers latency
+        router_latencies = [self.ROUTER_LATENCY] * num_routers
         for i in range(num_routers):
             router = Router(router_id=i, latency=router_latencies[i])
             if options.chiplet_clock_domain:
@@ -143,7 +144,7 @@ class ChipletTopo(BaseTopology):
                 [1 for _ in range(num_noi)] for _ in range(num_noi)
             ]
         # TODO: set edge latency
-        latency_edge = 2
+        latency_edge = 1
 
         int_links = []
         ext_links = []
