@@ -5,7 +5,7 @@
 #   - 2 benchmarks run in parallel
 #   - benchmarks are processed in sequential batches
 #
-# Folder naming: <benchmark>_s_l_s_f, <benchmark>_s_l_l_f, <benchmark>_l_l_s_f, <benchmark>_l_l_l_f
+# Folder naming: <benchmark>-slsf, <benchmark>-sllf, <benchmark>-llsf, <benchmark>-lllf
 #   First s/l = latency (small/large)
 #   Second s/l = frequency (small/large)
 
@@ -58,10 +58,10 @@ BENCHMARKS=(
 # 4 configuration variants
 # ---------------------------------------------------------------------------
 CONFIGS=(
-  "s_l_s_f|${LAT_S}|${FREQ_S_CPU}|${FREQ_S_GPU}"
-  "s_l_l_f|${LAT_S}|${FREQ_L_CPU}|${FREQ_L_GPU}"
-  "l_l_s_f|${LAT_L}|${FREQ_S_CPU}|${FREQ_S_GPU}"
-  "l_l_l_f|${LAT_L}|${FREQ_L_CPU}|${FREQ_L_GPU}"
+  "slsf|${LAT_S}|${FREQ_S_CPU}|${FREQ_S_GPU}"
+  "sllf|${LAT_S}|${FREQ_L_CPU}|${FREQ_L_GPU}"
+  "llsf|${LAT_L}|${FREQ_S_CPU}|${FREQ_S_GPU}"
+  "lllf|${LAT_L}|${FREQ_L_CPU}|${FREQ_L_GPU}"
 )
 
 # ---------------------------------------------------------------------------
@@ -75,7 +75,7 @@ run_one() {
     local cpu_freq="$5"
     local gpu_freq="$6"
 
-    local out_dir="${BASE_DIR}/${bm_name}_${cfg_label}"
+    local out_dir="${BASE_DIR}/${bm_name}-${cfg_label}"
     mkdir -p "${out_dir}"
 
     echo "[$(date '+%H:%M:%S')] Starting ${bm_name} / ${cfg_label} -> ${out_dir}"
