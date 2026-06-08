@@ -42,33 +42,75 @@
 # --fast-forward-pseudo-op \
 
 # apu_se.py
-OUTPUT_DIR=m5out_test/copy-512KB
+OUTPUT_DIR=m5out_test/srad_v2-small
 mkdir -p "$OUTPUT_DIR"
 
 ./build/VEGA_X86/gem5.fast \
 -d "$OUTPUT_DIR" \
 configs/example/apu_se.py \
 --transient-window-ticks 1000000000 \
--m 200000000000 \
---m5work-dump \
 --cpu-type X86O3CPU \
 -n 4 \
 --CPUClock 3.0GHz \
---gpu-clock 1.5GHz \
---ruby-clock 1.0GHz \
+--gpu-clock 1.0GHz \
+--ruby-clock 3.5GHz \
 --network garnet \
 --link-width-bits 128 \
 --chiplet-topo \
---latency-val=4,3,3,3,3 \
+--latency-val=1,1,1,1,1 \
 --chiplet-clock-domain \
 --chiplet-cdc \
---serdes-latency 2 \
 --mem-size 8GiB \
 --mem-type HBM_2000_4H_1x64 \
 --num-dirs 4 \
--c gem5-resources/src/gpu/hip-samples/bin/copy-longrun --options="524288 2 2 1" \
-2>&1 | tee "${OUTPUT_DIR}/print.log"
-# > "${OUTPUT_DIR}/print.log" 2>&1 &
+--benchmark-root=gpu-rodinia/hip/srad/srad_v2 -c srad --options="128 128 0 31 0 31 0.5 2" \
+> "${OUTPUT_DIR}/print.log" 2>&1 &
+
+# rodinia
+# hotspot
+# only very small fraction of GPU (< 1 transient window)
+# --benchmark-root=gpu-rodinia/hip/hotspot -c hotspot --options="64 2 1 gpu-rodinia/data/hotspot/temp_64 gpu-rodinia/data/hotspot/power_64 gpu-rodinia/hip/hotspot/output.out" \
+# costs much time on CPU before
+# --benchmark-root=gpu-rodinia/hip/hotspot -c hotspot --options="512 2 1 gpu-rodinia/data/hotspot/temp_512 gpu-rodinia/data/hotspot/power_512 gpu-rodinia/hip/hotspot/output.out" \
+
+# bfs
+# only very small fraction of GPU (< 1 transient window)
+# --benchmark-root=gpu-rodinia/hip/bfs -c bfs --options="gpu-rodinia/data/bfs/graph4096.txt" \
+# costs much time on CPU before
+# --benchmark-root=gpu-rodinia/hip/bfs -c bfs --options="gpu-rodinia/data/bfs/graph65536.txt" \
+
+# kmeans: unable
+
+# streamcluster: small and medium
+# --benchmark-root=gpu-rodinia/hip/streamcluster -c sc_gpu --options="5 10 32 8192 8192 200 none gpu-rodinia/hip/streamcluster/output.txt 3" \
+# --benchmark-root=gpu-rodinia/hip/streamcluster -c sc_gpu --options="10 20 64 16384 16384 500 none gpu-rodinia/hip/streamcluster/output.txt 3" \
+
+# backprop: origin, small, medium
+# --benchmark-root=gpu-rodinia/hip/backprop -c backprop --options="2097152" \
+# --benchmark-root=gpu-rodinia/hip/backprop -c backprop --options="65536" \
+# --benchmark-root=gpu-rodinia/hip/backprop -c backprop --options="262144" \
+
+# lud: origin, small
+# --benchmark-root=gpu-rodinia/hip/lud/cuda -c lud_cuda --options="-i gpu-rodinia/data/lud/256.dat" \
+# --benchmark-root=gpu-rodinia/hip/lud/cuda -c lud_cuda --options="-i gpu-rodinia/data/lud/64.dat" \
+
+# nn: origin, small
+# --benchmark-root=gpu-rodinia/hip/nn -c nn --options="gpu-rodinia/hip/nn/filelist_4 -r 5 -lat 30 -lng 90" \
+# --benchmark-root=gpu-rodinia/hip/nn -c nn --options="gpu-rodinia/data/nn/inputGen/list10k.txt -r 5 -lat 30 -lng 90" \
+
+# nw: origin, small, medium
+# --benchmark-root=gpu-rodinia/hip/nw -c needle --options="2048 10" \
+# --benchmark-root=gpu-rodinia/hip/nw -c needle --options="32 10" \
+# --benchmark-root=gpu-rodinia/hip/nw -c needle --options="512 10" \
+
+# srad_v1
+# --benchmark-root=gpu-rodinia/hip/srad/srad_v1 -c srad --options="100 0.5 502 458" \
+# srad_v2: origin, small
+# --benchmark-root=gpu-rodinia/hip/srad/srad_v2 -c srad --options="2048 2048 0 127 0 127 0.5 2" \
+# --benchmark-root=gpu-rodinia/hip/srad/srad_v2 -c srad --options="128 128 0 31 0 31 0.5 2" \
+
+
+
 
 # m5out_transient_pannotia
 # freq4.0-2.0-3.5lat1-1-1-1-1link-width-bits512
