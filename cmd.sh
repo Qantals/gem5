@@ -42,28 +42,31 @@
 # --fast-forward-pseudo-op \
 
 # apu_se.py
-OUTPUT_DIR=m5out_model_edge/bfs-sllf
+OUTPUT_DIR=m5out_trans/test
 mkdir -p "$OUTPUT_DIR"
 
 ./build/VEGA_X86/gem5.fast \
 -d "$OUTPUT_DIR" \
+--stats-file h5://stats.h5 \
 configs/example/apu_se.py \
+--transient-window-ticks 1000000000 \
+-m 400000000000 \
 --cpu-type X86O3CPU \
 -n 4 \
 --CPUClock 4.5GHz \
---gpu-clock 1.1GHz \
+--gpu-clock 1.5GHz \
 --ruby-clock 3.5GHz \
 --network garnet \
 --link-width-bits 128 \
 --chiplet-topo \
---latency-val=4,3,3,3,3 \
+--latency-val=1,1,1,1,1 \
 --chiplet-clock-domain \
 --chiplet-cdc \
 --mem-size 8GiB \
 --mem-type HBM_2000_4H_1x64 \
 --num-dirs 4 \
---benchmark-root=gpu-rodinia/hip/backprop -c backprop --options="65536" \
-> "${OUTPUT_DIR}/print.log" 2>&1 &
+--benchmark-root=gpu-rodinia/hip/hotspot -c hotspot --options="64 2 1 gpu-rodinia/data/hotspot/temp_64 gpu-rodinia/data/hotspot/power_64 gpu-rodinia/hip/hotspot/output.out" \
+2>&1 | tee "${OUTPUT_DIR}/print.log"
 
 
 # --latency-val=4,3,3,3,3 \
