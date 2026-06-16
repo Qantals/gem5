@@ -48,30 +48,35 @@ CONFIGS = [
 # ── Benchmark definitions ────────────────────────────────────────────────
 # (name, benchmark_args_string)
 BENCHMARKS = [
+    # (
+    #     "hotspot",
+    #     "--benchmark-root=gpu-rodinia/hip/hotspot -c hotspot "
+    #     '--options="64 2 1 gpu-rodinia/data/hotspot/temp_64 '
+    #     'gpu-rodinia/data/hotspot/power_64 gpu-rodinia/hip/hotspot/output.out"',
+    # ),
+    # (
+    #     "lud",
+    #     '--benchmark-root=gpu-rodinia/hip/lud/cuda -c lud_cuda --options="-i gpu-rodinia/data/lud/256.dat"',
+    # ),
+    # (
+    #     "nn",
+    #     '--benchmark-root=gpu-rodinia/hip/nn -c nn --options="gpu-rodinia/hip/nn/filelist_4 -r 5 -lat 30 -lng 90"',
+    # ),
+    # ("nw", '--benchmark-root=gpu-rodinia/hip/nw -c needle --options="512 10"'),
+    # (
+    #     "srad_v1",
+    #     '--benchmark-root=gpu-rodinia/hip/srad/srad_v1 -c srad --options="100 0.5 502 458"',
+    # ),
+    # (
+    #     "streamcluster",
+    #     "--benchmark-root=gpu-rodinia/hip/streamcluster -c sc_gpu "
+    #     '--options="5 10 32 8192 8192 200 none '
+    #     'gpu-rodinia/hip/streamcluster/output.txt 3"',
+    # ),
     (
-        "hotspot",
-        "--benchmark-root=gpu-rodinia/hip/hotspot -c hotspot "
-        '--options="64 2 1 gpu-rodinia/data/hotspot/temp_64 '
-        'gpu-rodinia/data/hotspot/power_64 gpu-rodinia/hip/hotspot/output.out"',
-    ),
-    (
-        "lud",
-        '--benchmark-root=gpu-rodinia/hip/lud/cuda -c lud_cuda --options="-i gpu-rodinia/data/lud/256.dat"',
-    ),
-    (
-        "nn",
-        '--benchmark-root=gpu-rodinia/hip/nn -c nn --options="gpu-rodinia/hip/nn/filelist_4 -r 5 -lat 30 -lng 90"',
-    ),
-    ("nw", '--benchmark-root=gpu-rodinia/hip/nw -c needle --options="512 10"'),
-    (
-        "srad_v1",
-        '--benchmark-root=gpu-rodinia/hip/srad/srad_v1 -c srad --options="100 0.5 502 458"',
-    ),
-    (
-        "streamcluster",
-        "--benchmark-root=gpu-rodinia/hip/streamcluster -c sc_gpu "
-        '--options="5 10 32 8192 8192 200 none '
-        'gpu-rodinia/hip/streamcluster/output.txt 3"',
+        "bfs",
+        "--benchmark-root=gpu-rodinia/hip/bfs -c bfs "
+        '--options="gpu-rodinia/data/bfs/graph65536.txt"',
     ),
 ]
 

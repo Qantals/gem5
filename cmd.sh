@@ -42,7 +42,7 @@
 # --fast-forward-pseudo-op \
 
 # apu_se.py
-OUTPUT_DIR=m5out_trans/test
+OUTPUT_DIR=m5out_test/streamcluster
 mkdir -p "$OUTPUT_DIR"
 
 ./build/VEGA_X86/gem5.fast \
@@ -53,8 +53,8 @@ configs/example/apu_se.py \
 -m 400000000000 \
 --cpu-type X86O3CPU \
 -n 4 \
---CPUClock 4.5GHz \
---gpu-clock 1.5GHz \
+--CPUClock 3.0GHz \
+--gpu-clock 1.0GHz \
 --ruby-clock 3.5GHz \
 --network garnet \
 --link-width-bits 128 \
@@ -65,8 +65,8 @@ configs/example/apu_se.py \
 --mem-size 8GiB \
 --mem-type HBM_2000_4H_1x64 \
 --num-dirs 4 \
---benchmark-root=gpu-rodinia/hip/hotspot -c hotspot --options="64 2 1 gpu-rodinia/data/hotspot/temp_64 gpu-rodinia/data/hotspot/power_64 gpu-rodinia/hip/hotspot/output.out" \
-2>&1 | tee "${OUTPUT_DIR}/print.log"
+--benchmark-root=gpu-rodinia/hip/streamcluster -c sc_gpu --options="10 20 256 65536 65536 1000 none gpu-rodinia/hip/streamcluster/output.txt 3" \
+> "${OUTPUT_DIR}/print.log" 2>&1 &
 
 
 # --latency-val=4,3,3,3,3 \
@@ -81,9 +81,8 @@ configs/example/apu_se.py \
 # --benchmark-root=gpu-rodinia/hip/hotspot -c hotspot --options="64 2 1 gpu-rodinia/data/hotspot/temp_64 gpu-rodinia/data/hotspot/power_64 gpu-rodinia/hip/hotspot/output.out" \
 # --benchmark-root=gpu-rodinia/hip/lud/cuda -c lud_cuda --options="-i gpu-rodinia/data/lud/256.dat" \
 # --benchmark-root=gpu-rodinia/hip/nn -c nn --options="gpu-rodinia/hip/nn/filelist_4 -r 5 -lat 30 -lng 90" \
-# --benchmark-root=gpu-rodinia/hip/nw -c needle --options="512 10" \
-# --benchmark-root=gpu-rodinia/hip/srad/srad_v1 -c srad --options="100 0.5 502 458" \
-# --benchmark-root=gpu-rodinia/hip/streamcluster -c sc_gpu --options="5 10 32 8192 8192 200 none gpu-rodinia/hip/streamcluster/output.txt 3" \
+# --benchmark-root=gpu-rodinia/hip/nw -c needle --options="2048 10" \
+# --benchmark-root=gpu-rodinia/hip/streamcluster -c sc_gpu --options="10 20 256 65536 65536 1000 none gpu-rodinia/hip/streamcluster/output.txt 3" \
 
 
 # rodinia
@@ -101,7 +100,8 @@ configs/example/apu_se.py \
 
 # kmeans: unable
 
-# streamcluster: small and medium
+# streamcluster: origin, small and medium
+# --benchmark-root=gpu-rodinia/hip/streamcluster -c sc_gpu --options="10 20 256 65536 65536 1000 none gpu-rodinia/hip/streamcluster/output.txt 3" \
 # --benchmark-root=gpu-rodinia/hip/streamcluster -c sc_gpu --options="5 10 32 8192 8192 200 none gpu-rodinia/hip/streamcluster/output.txt 3" \
 # --benchmark-root=gpu-rodinia/hip/streamcluster -c sc_gpu --options="10 20 64 16384 16384 500 none gpu-rodinia/hip/streamcluster/output.txt 3" \
 
