@@ -4,7 +4,7 @@ Run multiple benchmarks with 4 configurations each.
 
 Concurrency model:
   - 4 configs per benchmark run in parallel
-  - 2 benchmarks run in parallel
+  - M benchmarks run in parallel (set via BENCHMARK_PARALLELISM below)
   - benchmarks are processed in sequential batches
 
 Folder naming: <benchmark>-slsf, <benchmark>-sllf, <benchmark>-llsf, <benchmark>-lllf
@@ -35,6 +35,11 @@ RUBY_CLOCK = "3.5GHz"
 NETWORK = "garnet"
 LINK_WIDTH = 128
 BASE_DIR = Path("m5out_bench")
+
+# ── Benchmark parallelism ────────────────────────────────────────────────
+# Number of benchmarks to run in parallel within each batch.
+# Adjust this to control resource usage (M benchmarks × 4 configs).
+BENCHMARK_PARALLELISM = 1
 
 # ── Configuration variants ──────────────────────────────────────────────
 # (cfg_label, latency, cpu_freq, gpu_freq)
@@ -187,23 +192,27 @@ def main() -> int:
     print(f"  Base dir      : {BASE_DIR}")
     print(f"  Benchmarks    : {len(BENCHMARKS)}")
     print(f"  Configs/bench : {len(CONFIGS)}")
-    print(f"  Parallelism   : 2 benchmarks × 4 configs = 8 max")
+    print(
+        f"  Parallelism   : {BENCHMARK_PARALLELISM} benchmarks × 4 configs = {BENCHMARK_PARALLELISM * 4} max"
+    )
     print("=" * 46)
     print()
 
     total = len(BENCHMARKS)
     failed_any = False
 
-    for i in range(0, total, 2):
-        batch_num = i // 2 + 1
-        batch = BENCHMARKS[i : i + 2]
+    for i in range(0, total, BENCHMARK_PARALLELISM):
+        batch_num = i // BENCHMARK_PARALLELISM + 1
+        batch = BENCHMARKS[i : i + BENCHMARK_PARALLELISM]
 
         names = [b[0] for b in batch]
         print(f"\n{'>>' * 30}")
         print(f"[{timestamp()}] Batch {batch_num}: {', '.join(names)}")
         print(f"{'<<' * 30}")
 
-        with ProcessPoolExecutor(max_workers=2) as executor:
+        with ProcessPoolExecutor(
+            max_workers=BENCHMARK_PARALLELISM
+        ) as executor:
             futures = {
                 executor.submit(run_benchmark, bm_name, bm_args): bm_name
                 for bm_name, bm_args in batch
