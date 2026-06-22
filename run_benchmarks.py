@@ -21,8 +21,8 @@ GEM5_BINARY = Path("./build/VEGA_X86/gem5.fast")
 GEM5_SCRIPT = "configs/example/apu_se.py"
 
 # ── Latency presets ──────────────────────────────────────────────────────
-LAT_S = "4,3,3,3,3"
-LAT_L = "11,9,9,9,9"
+LAT_S = "4,3,3"
+LAT_L = "11,9,9"
 
 # ── Frequency presets ────────────────────────────────────────────────────
 FREQ_S_CPU = "3.0GHz"
@@ -48,35 +48,39 @@ CONFIGS = [
 # ── Benchmark definitions ────────────────────────────────────────────────
 # (name, benchmark_args_string)
 BENCHMARKS = [
-    # (
-    #     "hotspot",
-    #     "--benchmark-root=gpu-rodinia/hip/hotspot -c hotspot "
-    #     '--options="64 2 1 gpu-rodinia/data/hotspot/temp_64 '
-    #     'gpu-rodinia/data/hotspot/power_64 gpu-rodinia/hip/hotspot/output.out"',
-    # ),
-    # (
-    #     "lud",
-    #     '--benchmark-root=gpu-rodinia/hip/lud/cuda -c lud_cuda --options="-i gpu-rodinia/data/lud/256.dat"',
-    # ),
-    # (
-    #     "nn",
-    #     '--benchmark-root=gpu-rodinia/hip/nn -c nn --options="gpu-rodinia/hip/nn/filelist_4 -r 5 -lat 30 -lng 90"',
-    # ),
-    # ("nw", '--benchmark-root=gpu-rodinia/hip/nw -c needle --options="512 10"'),
-    # (
-    #     "srad_v1",
-    #     '--benchmark-root=gpu-rodinia/hip/srad/srad_v1 -c srad --options="100 0.5 502 458"',
-    # ),
-    # (
-    #     "streamcluster",
-    #     "--benchmark-root=gpu-rodinia/hip/streamcluster -c sc_gpu "
-    #     '--options="5 10 32 8192 8192 200 none '
-    #     'gpu-rodinia/hip/streamcluster/output.txt 3"',
-    # ),
+    (
+        "backprop",
+        "--benchmark-root=gpu-rodinia/hip/backprop -c backprop "
+        '--options="65536"',
+    ),
     (
         "bfs",
         "--benchmark-root=gpu-rodinia/hip/bfs -c bfs "
         '--options="gpu-rodinia/data/bfs/graph65536.txt"',
+    ),
+    (
+        "hotspot",
+        "--benchmark-root=gpu-rodinia/hip/hotspot -c hotspot "
+        '--options="64 2 1 gpu-rodinia/data/hotspot/temp_64 '
+        'gpu-rodinia/data/hotspot/power_64 gpu-rodinia/hip/hotspot/output.out"',
+    ),
+    (
+        "lud",
+        '--benchmark-root=gpu-rodinia/hip/lud/cuda -c lud_cuda --options="-i gpu-rodinia/data/lud/256.dat"',
+    ),
+    (
+        "nn",
+        '--benchmark-root=gpu-rodinia/hip/nn -c nn --options="gpu-rodinia/hip/nn/filelist_4 -r 5 -lat 30 -lng 90"',
+    ),
+    (
+        "nw",
+        '--benchmark-root=gpu-rodinia/hip/nw -c needle --options="2048 10"',
+    ),
+    (
+        "streamcluster",
+        "--benchmark-root=gpu-rodinia/hip/streamcluster -c sc_gpu "
+        '--options="10 20 256 65536 65536 1000 none '
+        'gpu-rodinia/hip/streamcluster/output.txt 3"',
     ),
 ]
 
@@ -118,6 +122,10 @@ def run_one(
         "--link-width-bits",
         str(LINK_WIDTH),
         "--chiplet-topo",
+        "--chiplet-topo-type",
+        "Chiplet_1MEM",
+        "--num-dirs",
+        "1",
         "--latency-val",
         latency,
         "--chiplet-clock-domain",
@@ -126,8 +134,6 @@ def run_one(
         "8GiB",
         "--mem-type",
         "HBM_2000_4H_1x64",
-        "--num-dirs",
-        "4",
     ]
     # Append benchmark args as a single shell string (gem5 parses them internally)
     cmd += [bm_args]

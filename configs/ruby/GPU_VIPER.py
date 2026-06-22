@@ -48,7 +48,11 @@ from .Ruby import (
 addToPath("../")
 
 from topologies.Cluster import Cluster
-from topologies.ChipletTopo import ChipletTopo
+from topologies.ChipletTopoBase import (
+    ChipletTopo,
+    Chiplet_1MEM,
+    Chiplet_2CPU1GPU,
+)
 from topologies.Crossbar import Crossbar
 
 
@@ -134,7 +138,11 @@ class CPCntrl(GPU_VIPER_CorePair_Controller, CntrlBase):
 
         self.ruby_system = ruby_system
         # add by zyh: begin
-        if options.chiplet_clock_domain and hasattr(options, "CPUClock") and hasattr(options, "cpu_voltage"):
+        if (
+            options.chiplet_clock_domain
+            and hasattr(options, "CPUClock")
+            and hasattr(options, "cpu_voltage")
+        ):
             self.clk_domain = SrcClockDomain(
                 clock=options.CPUClock,
                 voltage_domain=VoltageDomain(voltage=options.cpu_voltage),
@@ -986,7 +994,13 @@ def create_system(
     # add by zyh: begin
     mainChipletTopo = None
     if options.chiplet_topo:
-        mainChipletTopo = ChipletTopo(options)
+        topo_map = {
+            "ChipletTopo": ChipletTopo,
+            "Chiplet_1MEM": Chiplet_1MEM,
+            "Chiplet_2CPU1GPU": Chiplet_2CPU1GPU,
+        }
+        topo_class = topo_map.get(options.chiplet_topo_type, ChipletTopo)
+        mainChipletTopo = topo_class(options)
     # add by zyh: end
 
     # Create CPU directory controllers
@@ -1001,15 +1015,18 @@ def create_system(
         # add by zyh: end
 
     # Create CPU core pairs
-    (cp_sequencers, cp_cntrl_nodes) = construct_corepairs(
+    cp_sequencers, cp_cntrl_nodes = construct_corepairs(
         options, system, ruby_system, ruby_system.network
     )
     cpu_sequencers.extend(cp_sequencers)
-    for cp_cntrl in cp_cntrl_nodes:
+    for i, cp_cntrl in enumerate(cp_cntrl_nodes):
         cpuCluster.add(cp_cntrl)
         # add by zyh: begin
         if options.chiplet_topo:
-            mainChipletTopo.addCPUCluster(cp_cntrl)
+            chiplet_idx = (
+                i % 2 if options.chiplet_topo_type == "Chiplet_2CPU1GPU" else 0
+            )
+            mainChipletTopo.addCPUCluster(cp_cntrl, chiplet_idx=chiplet_idx)
         # add by zyh: end
 
     # Register CPUs and caches for each CorePair and directory (SE mode only)
@@ -1076,7 +1093,7 @@ def create_system(
             )
 
     # Create TCPs
-    (tcp_sequencers, tcp_cntrl_nodes) = construct_tcps(
+    tcp_sequencers, tcp_cntrl_nodes = construct_tcps(
         options, system, ruby_system, ruby_system.network
     )
     cpu_sequencers.extend(tcp_sequencers)
@@ -1088,7 +1105,7 @@ def create_system(
         # add by zyh: end
 
     # Create SQCs
-    (sqc_sequencers, sqc_cntrl_nodes) = construct_sqcs(
+    sqc_sequencers, sqc_cntrl_nodes = construct_sqcs(
         options, system, ruby_system, ruby_system.network
     )
     cpu_sequencers.extend(sqc_sequencers)
@@ -1100,7 +1117,7 @@ def create_system(
         # add by zyh: end
 
     # Create Scalars
-    (scalar_sequencers, scalar_cntrl_nodes) = construct_scalars(
+    scalar_sequencers, scalar_cntrl_nodes = construct_scalars(
         options, system, ruby_system, ruby_system.network
     )
     cpu_sequencers.extend(scalar_sequencers)
@@ -1112,7 +1129,7 @@ def create_system(
         # add by zyh: end
 
     # Create command processors
-    (cmdproc_sequencers, cmdproc_cntrl_nodes) = construct_cmdprocs(
+    cmdproc_sequencers, cmdproc_cntrl_nodes = construct_cmdprocs(
         options, system, ruby_system, ruby_system.network
     )
     cpu_sequencers.extend(cmdproc_sequencers)

@@ -41,8 +41,12 @@
 # --m5work-dump \
 # --fast-forward-pseudo-op \
 
+# --chiplet-topo-type ChipletTopo \
+# --chiplet-topo-type Chiplet_1MEM \
+# --chiplet-topo-type Chiplet_2CPU1GPU \
+
 # apu_se.py
-OUTPUT_DIR=m5out_test/streamcluster
+OUTPUT_DIR=m5out_topo_test/
 mkdir -p "$OUTPUT_DIR"
 
 ./build/VEGA_X86/gem5.fast \
@@ -59,14 +63,15 @@ configs/example/apu_se.py \
 --network garnet \
 --link-width-bits 128 \
 --chiplet-topo \
---latency-val=1,1,1,1,1 \
+--chiplet-topo-type Chiplet_1MEM \
+--num-dirs 1 \
+--latency-val=2,3,4 \
 --chiplet-clock-domain \
 --chiplet-cdc \
 --mem-size 8GiB \
 --mem-type HBM_2000_4H_1x64 \
---num-dirs 4 \
---benchmark-root=gpu-rodinia/hip/streamcluster -c sc_gpu --options="10 20 256 65536 65536 1000 none gpu-rodinia/hip/streamcluster/output.txt 3" \
-> "${OUTPUT_DIR}/print.log" 2>&1 &
+--benchmark-root=gpu-rodinia/hip/hotspot -c hotspot --options="64 2 1 gpu-rodinia/data/hotspot/temp_64 gpu-rodinia/data/hotspot/power_64 gpu-rodinia/hip/hotspot/output.out" \
+2>&1 | tee "${OUTPUT_DIR}/print.log"
 
 
 # --latency-val=4,3,3,3,3 \

@@ -446,6 +446,13 @@ parser.add_argument(
     help="Use customed chiplet topology",
 )
 parser.add_argument(
+    "--chiplet-topo-type",
+    type=str,
+    default="ChipletTopo",
+    choices=["ChipletTopo", "Chiplet_1MEM", "Chiplet_2CPU1GPU"],
+    help="Chiplet topology variant (requires --chiplet-topo)",
+)
+parser.add_argument(
     "--latency-path",
     type=str,
     default="",
