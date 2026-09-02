@@ -47,6 +47,7 @@
 #include "gpu-compute/gpu_command_processor.hh"
 #include "mem/packet_access.hh"
 #include "mem/page_table.hh"
+#include "sim/eventq.hh"
 #include "sim/full_system.hh"
 #include "sim/process.hh"
 #include "sim/proxy_ptr.hh"
@@ -76,7 +77,11 @@ HSAPP_EVENT_DESCRIPTION_GENERATOR(QueueProcessEvent)
 HSAPacketProcessor::HSAPacketProcessor(const Params &p)
     : DmaVirtDevice(p), walker(p.walker),
       numHWQueues(p.numHWQueues), pioAddr(p.pioAddr),
-      pioSize(PAGE_SIZE), pioDelay(10), pktProcessDelay(p.pktProcessDelay)
+      pioSize(PAGE_SIZE), pioDelay(10),
+      // add by zyh: begin
+      doorbellTransportDelay(p.doorbellTransportDelay),
+        // add by zyh: end
+      pktProcessDelay(p.pktProcessDelay)
 {
     DPRINTF(HSAPacketProcessor, "%s:\n", __FUNCTION__);
     hwSchdlr = new HWScheduler(this, p.wakeupDelay);
@@ -161,7 +166,19 @@ HSAPacketProcessor::write(Packet *pkt)
     DPRINTF(HSAPacketProcessor,
             "%s: write data 0x%x to offset %d (0x%x)\n",
             __FUNCTION__, doorbell_reg, daddr, daddr);
-    hwSchdlr->write(daddr, doorbell_reg);
+    // add by zyh: begin
+    if (doorbellTransportDelay == 0) {
+        hwSchdlr->write(daddr, doorbell_reg);
+    } else {
+        schedule(
+            new EventFunctionWrapper(
+                [this, daddr, doorbell_reg] {
+                    hwSchdlr->write(daddr, doorbell_reg);
+                },
+                name() + ".doorbellTransport", true),
+            curTick() + doorbellTransportDelay);
+    }
+    // add by zyh: end
     pkt->makeAtomicResponse();
     return pioDelay;
 }

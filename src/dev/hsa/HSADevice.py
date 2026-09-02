@@ -41,6 +41,11 @@ class HSAPacketProcessor(DmaVirtDevice):
 
     pioAddr = Param.Addr("doorbell physical address")
     numHWQueues = Param.Int("Number of HW queues")
+    # add by zyh: begin
+    doorbellTransportDelay = Param.Latency(
+        "0ns", "CPU-to-GPU physical doorbell transport delay"
+    )
+    # add by zyh: end
     # See:
     # Sooraj Puthoor et al., Oversubscribed Command Queues in GPUs. In the
     # proceedings of the 11th Workshop on General Purpose GPUs (GPGPU). 2018.
