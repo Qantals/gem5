@@ -167,17 +167,16 @@ HSAPacketProcessor::write(Packet *pkt)
             "%s: write data 0x%x to offset %d (0x%x)\n",
             __FUNCTION__, doorbell_reg, daddr, daddr);
     // add by zyh: begin
-    if (doorbellTransportDelay == 0) {
-        hwSchdlr->write(daddr, doorbell_reg);
-    } else {
-        schedule(
-            new EventFunctionWrapper(
-                [this, daddr, doorbell_reg] {
-                    hwSchdlr->write(daddr, doorbell_reg);
-                },
-                name() + ".doorbellTransport", true),
-            curTick() + doorbellTransportDelay);
-    }
+    // Model GPU observation of a posted CPU doorbell write. Always use an
+    // event so zero and nonzero transport delays have identical event-ordering
+    // semantics; gem5 permits the zero-delay event at curTick().
+    schedule(
+        new EventFunctionWrapper(
+            [this, daddr, doorbell_reg] {
+                hwSchdlr->write(daddr, doorbell_reg);
+            },
+            name() + ".doorbellTransport", true),
+        curTick() + doorbellTransportDelay);
     // add by zyh: end
     pkt->makeAtomicResponse();
     return pioDelay;
