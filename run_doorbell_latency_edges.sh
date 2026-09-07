@@ -1,25 +1,24 @@
 #!/usr/bin/env bash
-# Run four gem5 BFS experiments that stress-test the HSA CPU-to-GPU PIO
-# doorbell transport model while also retaining CPU-GPU floorplan-link cases.
+# Sweep the HSA CPU-to-GPU PIO doorbell transport delay with the BFS benchmark.
 #
-# Default doorbell mode: literal 0ns baseline versus 1us stress delay.
-# The 1us value is deliberately unrealistically large: it validates that the
-# new event path can affect execution, but is not a chiplet floorplan value.
+# Default cases span practical simulator time scales: 1ns, 3ns, 10ns, 100ns,
+# and 1us. The 1us point is a deliberately large stress test; it is not a
+# physically realistic interposer distance. All cases use the same Garnet
+# CPU-GPU link, so differences isolate the doorbell model rather than NoI
+# data/coherence traffic.
 #
-# For real floorplan studies, replace these values with an independently
-# justified physical transport delay, or restore cycle-derived values.
+# At most four gem5 processes execute concurrently. If more cases are added
+# to DOORBELL_LATENCIES, the remaining cases wait in the shell's queue until a
+# running process finishes.
 #
-# Cases (all launched in parallel):
-#   doorbell_only_close / doorbell_only_far: keep the Garnet CPU-GPU link at
-#   CONTROL_CPU_GPU_CYCLES and vary only 0ns versus 1us doorbell delay.
-#   floorplan_close / floorplan_far: vary the Garnet link from CLOSE to FAR
-#   and pair it with 0ns versus 1us doorbell delay. This pair is not an
-#   isolated doorbell measurement.
+# Usage (from the gem5 repository root inside the gcn-gpu container):
+#   ./run_doorbell_latency_edges.sh
 #
-# Usage: ./run_doorbell_latency_edges.sh
+# Change the sweep without changing the four-process limit:
+#   DOORBELL_LATENCIES="0ns 1ns 3ns 10ns 100ns 1us" ./run_doorbell_latency_edges.sh
 #
-# Override the stress value: DOORBELL_STRESS_LATENCY=5us ./run_doorbell_latency_edges.sh
-# Run this script from the gem5 repository root, inside the gcn-gpu container.
+# Set OUT_ROOT to keep results in a chosen directory:
+#   OUT_ROOT=m5out_doorbell_sweep ./run_doorbell_latency_edges.sh
 
 set -euo pipefail
 
@@ -39,21 +38,16 @@ CPU_DIR1_CYCLES="${CPU_DIR1_CYCLES:-8}"
 GPU_DIR2_CYCLES="${GPU_DIR2_CYCLES:-7}"
 GPU_DIR3_CYCLES="${GPU_DIR3_CYCLES:-11}"
 
-# These values are the floorplan edge cases for the CPU-GPU interposer link.
-CLOSE_CPU_GPU_CYCLES="${CLOSE_CPU_GPU_CYCLES:-4}"
-FAR_CPU_GPU_CYCLES="${FAR_CPU_GPU_CYCLES:-11}"
-
-# The control cases hold all Garnet link latencies constant. They isolate the
-# newly-modelled PIO doorbell transport delay from NoI data/coherence traffic.
+# Hold the Garnet CPU-GPU link constant so this is an isolated doorbell sweep.
 CONTROL_CPU_GPU_CYCLES="${CONTROL_CPU_GPU_CYCLES:-8}"
 
-# Doorbell mode for this run: no-added-transport baseline versus deliberately
-# large validation delay.
-DOORBELL_BASELINE_LATENCY="${DOORBELL_BASELINE_LATENCY:-0ns}"
-DOORBELL_STRESS_LATENCY="${DOORBELL_STRESS_LATENCY:-1us}"
+# Whitespace-separated values accepted by gem5's --doorbell-latency option.
+DOORBELL_LATENCIES="${DOORBELL_LATENCIES:-1ns 3ns 10ns 100ns 1us}"
+# Fixed user-requested concurrency cap, independent of the number of cases.
+MAX_PARALLEL_RUNS=4
 
-# BFS has about 20 GPU kernel launches. Even 20 * 1us is only about 0.013% of
-# a 155ms run, so IPS can vary by more than this effect.
+# BFS has about 20 GPU kernel launches. With a 155ms execution, even a fully
+# exposed 20 * 1us contribution is small, so repeat runs for small differences.
 
 BENCHMARK_ROOT="${BENCHMARK_ROOT:-gpu-rodinia/hip/bfs}"
 BENCHMARK_CMD="${BENCHMARK_CMD:-bfs}"
@@ -136,59 +130,60 @@ mkdir -p "$OUT_ROOT"
 SUMMARY_FILE="$OUT_ROOT/summary.tsv"
 printf 'case\tcpu_gpu_link_cycles\tdoorbell_latency\tsim_seconds\tsim_insts\tsystem_ips\n' > "$SUMMARY_FILE"
 
-# Use the literal stress-test values; do not derive them from Garnet cycles.
-# Thus the doorbell-only pair varies only this parameter.
-CLOSE_DOORBELL_LATENCY="$DOORBELL_BASELINE_LATENCY"
-FAR_DOORBELL_LATENCY="$DOORBELL_STRESS_LATENCY"
-
 cat <<EOF
 Output directory: $OUT_ROOT
 Benchmark: $BENCHMARK_CMD $BENCHMARK_OPTIONS
-Closest CPU-GPU edge: $CLOSE_CPU_GPU_CYCLES cycles / $CLOSE_DOORBELL_LATENCY
-Farthest CPU-GPU edge: $FAR_CPU_GPU_CYCLES cycles / $FAR_DOORBELL_LATENCY
+Doorbell latencies: $DOORBELL_LATENCIES
+Constant CPU-GPU Garnet link: $CONTROL_CPU_GPU_CYCLES cycles
+Maximum concurrent gem5 processes: $MAX_PARALLEL_RUNS
 
-doorbell_only_close (0ns) versus doorbell_only_far (1us) isolates the
-doorbell transport model because both use the same 8-cycle Garnet link.
-floorplan_close versus floorplan_far combines the 4-cycle versus 11-cycle
-Garnet link change with the same 0ns versus 1us doorbell change. All four
-execute concurrently. The control link is only for isolation, not a
-floorplan distance used by floorplan_close or floorplan_far.
+Each row varies only --doorbell-latency. Runs beyond the first four are
+started as earlier runs finish.
 EOF
 
-labels=(
-    doorbell_only_close
-    doorbell_only_far
-    floorplan_close
-    floorplan_far
-)
-link_cycles=(
-    "$CONTROL_CPU_GPU_CYCLES"
-    "$CONTROL_CPU_GPU_CYCLES"
-    "$CLOSE_CPU_GPU_CYCLES"
-    "$FAR_CPU_GPU_CYCLES"
-)
-doorbell_latencies=(
-    "$CLOSE_DOORBELL_LATENCY"
-    "$FAR_DOORBELL_LATENCY"
-    "$CLOSE_DOORBELL_LATENCY"
-    "$FAR_DOORBELL_LATENCY"
-)
-pids=()
+read -r -a doorbell_latencies <<< "$DOORBELL_LATENCIES"
+if (( ${#doorbell_latencies[@]} == 0 )); then
+    echo "DOORBELL_LATENCIES must contain at least one latency." >&2
+    exit 1
+fi
 
-for idx in "${!labels[@]}"; do
-    run_case "${labels[$idx]}" "${link_cycles[$idx]}" \
-        "${doorbell_latencies[$idx]}" &
-    pids+=("$!")
-done
-
+labels=()
+link_cycles=()
+running_pids=()
+running_labels=()
 failed=0
-for idx in "${!pids[@]}"; do
-    if wait "${pids[$idx]}"; then
-        echo "[${labels[$idx]}] completed"
+
+wait_for_oldest() {
+    local pid="${running_pids[0]}"
+    local label="${running_labels[0]}"
+
+    if wait "$pid"; then
+        echo "[$label] completed"
     else
-        echo "[${labels[$idx]}] failed; see $OUT_ROOT/${labels[$idx]}/print.log" >&2
+        echo "[$label] failed; see $OUT_ROOT/$label/print.log" >&2
         failed=1
     fi
+    running_pids=("${running_pids[@]:1}")
+    running_labels=("${running_labels[@]:1}")
+}
+
+for doorbell_latency in "${doorbell_latencies[@]}"; do
+    label="doorbell_${doorbell_latency//[^[:alnum:]]/_}"
+    labels+=("$label")
+    link_cycles+=("$CONTROL_CPU_GPU_CYCLES")
+
+    # Maintain the four-process cap even when the latency list grows.
+    if (( ${#running_pids[@]} >= MAX_PARALLEL_RUNS )); then
+        wait_for_oldest
+    fi
+
+    run_case "$label" "$CONTROL_CPU_GPU_CYCLES" "$doorbell_latency" &
+    running_pids+=("$!")
+    running_labels+=("$label")
+done
+
+while (( ${#running_pids[@]} > 0 )); do
+    wait_for_oldest
 done
 
 if (( failed )); then
@@ -204,6 +199,5 @@ echo
 echo "Results: $SUMMARY_FILE"
 column -t -s $'\t' "$SUMMARY_FILE" 2>/dev/null || cat "$SUMMARY_FILE"
 echo
-echo "Compare doorbell_only_close vs doorbell_only_far to isolate the new model."
-echo "Compare floorplan_close vs floorplan_far for the total CPU-GPU distance effect."
-echo "For a measurable IPS difference, use a benchmark with many short kernel launches."
+echo "Compare rows by simSeconds; all rows use the same Garnet link."
+echo "For small differences, repeat the sweep and compare completion time."
