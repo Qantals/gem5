@@ -337,19 +337,27 @@ HWScheduler::write(Addr db_addr, uint64_t doorbell_reg)
     uint32_t al_idx = dbMap[db_addr];
     // Modify the write pointer
     activeList[al_idx].qDesc->writeIndex = doorbell_reg;
-    // If a queue is unmapped and remapped (common in full system) the qDesc
-    // gets reused. Keep the readIndex up to date so that when the HSA packet
-    // processor gets commands from host, the correct entry is read after
-    // remapping.
-    activeList[al_idx].qDesc->readIndex = doorbell_reg - 1;
+
+    // modified by zyh: begin for mapped-queue publication correctness
+    const auto registered = regdListMap.find(al_idx);
+    // If a queue is unmapped and remapped (common in full system), the qDesc
+    // gets reused. Seed the consumer index while it is unmapped so the latest
+    // packet can be found after remapping. While mapped, readIndex is owned by
+    // HSAPacketProcessor::getCommandsFromHost and must not be advanced by a
+    // producer doorbell: doing so drops previously published packets when
+    // several doorbells arrive before the local AQL buffer drains.
+    if (registered == regdListMap.end()) {
+        activeList[al_idx].qDesc->readIndex = doorbell_reg - 1;
+    }
     DPRINTF(HSAPacketProcessor, "q %d readIndex %d writeIndex %d\n",
             al_idx, activeList[al_idx].qDesc->readIndex,
             activeList[al_idx].qDesc->writeIndex);
     // If this queue is mapped, then start DMA to fetch the
     // AQL packet
-    if (regdListMap.find(al_idx) != regdListMap.end()) {
-        hsaPP->getCommandsFromHost(0, regdListMap[al_idx]);
+    if (registered != regdListMap.end()) {
+        hsaPP->getCommandsFromHost(0, registered->second);
     }
+    // modified by zyh: end for mapped-queue publication correctness
 }
 
 void
