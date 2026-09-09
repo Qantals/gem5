@@ -477,12 +477,6 @@ parser.add_argument(
     help="Floorplan latency profile values in string format",
 )
 parser.add_argument(
-    "--doorbell-latency",
-    type=str,
-    default="0ns",
-    help="Floorplan-dependent CPU-to-GPU doorbell transport latency",
-)
-parser.add_argument(
     "--transient-window-ticks",
     type=int,
     default=0,
@@ -827,11 +821,7 @@ render_driver = GPURenderDriver(filename=f"dri/renderD{renderDriNum}")
 # packet processor (HSAPP), GPU command processor (CP), and the
 # dispatcher.
 gpu_hsapp = HSAPacketProcessor(
-    pioAddr=hsapp_gpu_map_paddr,
-    numHWQueues=args.num_hw_queues,
-    # modified by zyh: begin
-    doorbellTransportDelay=args.doorbell_latency,
-    # modified by zyh: end
+    pioAddr=hsapp_gpu_map_paddr, numHWQueues=args.num_hw_queues
 )
 dispatcher = GPUDispatcher(kernel_exit_events=True)
 gpu_cmd_proc = GPUCommandProcessor(hsapp=gpu_hsapp, dispatcher=dispatcher)

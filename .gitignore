@@ -43,7 +43,3 @@ bootcamp
 build*
 materials/
 model_bkp/**/*.png
-documents/
-*.help
-result.txt
-rodinia-3.1-data.tar.gz

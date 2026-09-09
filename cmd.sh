@@ -45,10 +45,8 @@
 # --chiplet-topo-type Chiplet_1MEM \
 # --chiplet-topo-type Chiplet_2CPU1GPU \
 
-# --stats-file h5://stats.h5 \
-
 # apu_se.py
-OUTPUT_DIR=m5out_test_topo/Chiplet_1MEM
+OUTPUT_DIR=m5out_topo_test/
 mkdir -p "$OUTPUT_DIR"
 
 ./build/VEGA_X86/gem5.fast \
@@ -59,7 +57,7 @@ configs/example/apu_se.py \
 -m 400000000000 \
 --cpu-type X86O3CPU \
 -n 4 \
---CPUClock 4.0GHz \
+--CPUClock 3.0GHz \
 --gpu-clock 1.0GHz \
 --ruby-clock 3.5GHz \
 --network garnet \
@@ -68,12 +66,11 @@ configs/example/apu_se.py \
 --chiplet-topo-type Chiplet_1MEM \
 --num-dirs 1 \
 --latency-val=2,3,4 \
---doorbell-latency=2.285714ns \
 --chiplet-clock-domain \
 --chiplet-cdc \
 --mem-size 8GiB \
 --mem-type HBM_2000_4H_1x64 \
--c gem5-resources/src/gpu/square/bin/square \
+--benchmark-root=gpu-rodinia/hip/hotspot -c hotspot --options="64 2 1 gpu-rodinia/data/hotspot/temp_64 gpu-rodinia/data/hotspot/power_64 gpu-rodinia/hip/hotspot/output.out" \
 2>&1 | tee "${OUTPUT_DIR}/print.log"
 
 

@@ -333,9 +333,6 @@ class HSAPacketProcessor: public DmaVirtDevice
     Addr pioAddr;
     Addr pioSize;
     Tick pioDelay;
-    // add by zyh: begin
-    const Tick doorbellTransportDelay;
-    // add by zyh: end
     const Tick pktProcessDelay;
 
     typedef HSAPacketProcessorParams Params;
