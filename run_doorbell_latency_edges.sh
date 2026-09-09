@@ -1,24 +1,7 @@
 #!/usr/bin/env bash
-# Run four gem5 BFS experiments that stress-test the HSA CPU-to-GPU PIO
-# doorbell transport model while also retaining CPU-GPU floorplan-link cases.
+# Compare closest and farthest CPU-GPU floorplan distances, including the
+# distance-dependent HSA doorbell path.
 #
-# Default doorbell mode: literal 0ns baseline versus 1us stress delay.
-# The 1us value is deliberately unrealistically large: it validates that the
-# new event path can affect execution, but is not a chiplet floorplan value.
-#
-# For real floorplan studies, replace these values with an independently
-# justified physical transport delay, or restore cycle-derived values.
-#
-# Cases (all launched in parallel):
-#   doorbell_only_close / doorbell_only_far: keep the Garnet CPU-GPU link at
-#   CONTROL_CPU_GPU_CYCLES and vary only 0ns versus 1us doorbell delay.
-#   floorplan_close / floorplan_far: vary the Garnet link from CLOSE to FAR
-#   and pair it with 0ns versus 1us doorbell delay. This pair is not an
-#   isolated doorbell measurement.
-#
-# Usage: ./run_doorbell_latency_edges.sh
-#
-# Override the stress value: DOORBELL_STRESS_LATENCY=5us ./run_doorbell_latency_edges.sh
 # Run this script from the gem5 repository root, inside the gcn-gpu container.
 
 set -euo pipefail
@@ -47,13 +30,10 @@ FAR_CPU_GPU_CYCLES="${FAR_CPU_GPU_CYCLES:-11}"
 # newly-modelled PIO doorbell transport delay from NoI data/coherence traffic.
 CONTROL_CPU_GPU_CYCLES="${CONTROL_CPU_GPU_CYCLES:-8}"
 
-# Doorbell mode for this run: no-added-transport baseline versus deliberately
-# large validation delay.
+# A deliberately exaggerated delay validates the new event path. It is not a
+# physical floorplan value; use realistic nanosecond values for final studies.
 DOORBELL_BASELINE_LATENCY="${DOORBELL_BASELINE_LATENCY:-0ns}"
 DOORBELL_STRESS_LATENCY="${DOORBELL_STRESS_LATENCY:-1us}"
-
-# BFS has about 20 GPU kernel launches. Even 20 * 1us is only about 0.013% of
-# a 155ms run, so IPS can vary by more than this effect.
 
 BENCHMARK_ROOT="${BENCHMARK_ROOT:-gpu-rodinia/hip/bfs}"
 BENCHMARK_CMD="${BENCHMARK_CMD:-bfs}"
@@ -64,6 +44,11 @@ if [[ ! -x "$GEM5_BIN" ]]; then
     exit 1
 fi
 
+to_ns() {
+    local cycles="$1"
+    awk -v cycles="$cycles" -v ghz="$RUBY_CLOCK_GHZ" \
+        'BEGIN { printf "%.9fns", cycles / ghz }'
+}
 
 extract_stat() {
     local stats_file="$1"
@@ -136,8 +121,6 @@ mkdir -p "$OUT_ROOT"
 SUMMARY_FILE="$OUT_ROOT/summary.tsv"
 printf 'case\tcpu_gpu_link_cycles\tdoorbell_latency\tsim_seconds\tsim_insts\tsystem_ips\n' > "$SUMMARY_FILE"
 
-# Use the literal stress-test values; do not derive them from Garnet cycles.
-# Thus the doorbell-only pair varies only this parameter.
 CLOSE_DOORBELL_LATENCY="$DOORBELL_BASELINE_LATENCY"
 FAR_DOORBELL_LATENCY="$DOORBELL_STRESS_LATENCY"
 
@@ -147,12 +130,9 @@ Benchmark: $BENCHMARK_CMD $BENCHMARK_OPTIONS
 Closest CPU-GPU edge: $CLOSE_CPU_GPU_CYCLES cycles / $CLOSE_DOORBELL_LATENCY
 Farthest CPU-GPU edge: $FAR_CPU_GPU_CYCLES cycles / $FAR_DOORBELL_LATENCY
 
-doorbell_only_close (0ns) versus doorbell_only_far (1us) isolates the
-doorbell transport model because both use the same 8-cycle Garnet link.
-floorplan_close versus floorplan_far combines the 4-cycle versus 11-cycle
-Garnet link change with the same 0ns versus 1us doorbell change. All four
-execute concurrently. The control link is only for isolation, not a
-floorplan distance used by floorplan_close or floorplan_far.
+The first two runs isolate doorbell latency. The last two model the complete
+CPU-GPU floorplan edge, where both Garnet's CPU-GPU link and the doorbell use
+the closest or farthest value.
 EOF
 
 labels=(
