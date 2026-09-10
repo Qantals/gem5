@@ -483,6 +483,12 @@ parser.add_argument(
     help="If >0, dump+reset stats every N ticks for transient IPS analysis",
 )
 parser.add_argument(
+    "--process-cwd",
+    type=str,
+    default=os.getcwd(),
+    help="Working directory used by the simulated benchmark process",
+)
+parser.add_argument(
     "--m5work-dump",
     action="store_true",
     default=False,
@@ -892,6 +898,7 @@ else:
 process = Process(
     executable=executable,
     cmd=[args.cmd] + args.options.split(),
+    cwd=args.process_cwd,
     drivers=[gpu_driver, render_driver],
     env=env,
 )
