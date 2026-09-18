@@ -160,6 +160,7 @@ machine(MachineType:Directory, "AMD Baseline protocol")
     MachineID CURequestor,        desc="CU that initiated the request";
     bool Cached,        desc="data hit in Cache";
     bool MemData,       desc="Got MemData?",default="false";
+    bool HBMRead,       desc="Got data from a DRAM read?",default="false";
     bool wtData,       desc="Got write through data?",default="false";
     bool atomicData,   desc="Got Atomic op?",default="false";
     // Note, protocol invariant: atomicData = atomicDataReturn || atomicDataNoReturn;
@@ -483,6 +484,7 @@ machine(MachineType:Directory, "AMD Baseline protocol")
       out_msg.OriginalResponder := tbe.LastSender;
       out_msg.CURequestor := tbe.CURequestor;
       out_msg.L3Hit := tbe.L3Hit;
+      out_msg.HBMRead := tbe.HBMRead;
       DPRINTF(RubySlicc, "%s\n", out_msg);
     }
   }
@@ -510,6 +512,7 @@ machine(MachineType:Directory, "AMD Baseline protocol")
       out_msg.ProbeRequestStartTime := tbe.ProbeRequestStartTime;
       out_msg.OriginalResponder := tbe.LastSender;
       out_msg.L3Hit := tbe.L3Hit;
+      out_msg.HBMRead := tbe.HBMRead;
       out_msg.isGLCSet := tbe.isGLCSet;
       out_msg.isSLCSet := tbe.isSLCSet;
       out_msg.CURequestor := tbe.CURequestor;
@@ -548,6 +551,7 @@ machine(MachineType:Directory, "AMD Baseline protocol")
           out_msg.CURequestor := tbe.CURequestor;
 	}
         out_msg.L3Hit := tbe.L3Hit;
+        out_msg.HBMRead := tbe.HBMRead;
         DPRINTF(RubySlicc, "%s\n", out_msg);
       }
       if (tbe.atomicData) {
@@ -1131,6 +1135,7 @@ machine(MachineType:Directory, "AMD Baseline protocol")
         tbe.DataBlk := in_msg.DataBlk;
       }
       tbe.MemData := true;
+      tbe.HBMRead := true;
     }
   }
 

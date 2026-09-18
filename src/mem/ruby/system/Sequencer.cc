@@ -596,7 +596,8 @@ Sequencer::readCallback(Addr address, DataBlock& data,
                         bool externalHit, const MachineType mach,
                         Cycles initialRequestTime,
                         Cycles forwardRequestTime,
-                        Cycles firstResponseTime)
+                        Cycles firstResponseTime,
+                        bool hbmRead)
 {
     //
     // Free up read requests until we hit the first Write request
@@ -612,6 +613,9 @@ Sequencer::readCallback(Addr address, DataBlock& data,
     bool ruby_request = true;
     while (!seq_req_list.empty()) {
         SequencerRequest &seq_req = seq_req_list.front();
+        if (hbmRead) {
+            seq_req.pkt->req->setHbmResponse();
+        }
         if (processReadCallback(seq_req, data, ruby_request, externalHit, mach,
                                 initialRequestTime, forwardRequestTime,
                                 firstResponseTime)) {

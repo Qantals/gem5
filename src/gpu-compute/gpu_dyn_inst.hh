@@ -472,6 +472,9 @@ class GPUDynInst : public GPUExecContext
 
     void setAccessTime(Tick currentTime) { accessTime = currentTime; }
 
+    void setAccessedHbm() { accessedHbm = true; }
+    bool hasAccessedHbm() const { return accessedHbm; }
+
     void profileRoundTripTime(Tick currentTime, int hopId);
     std::vector<Tick> getRoundTripTime() const { return roundTripTime; }
 
@@ -494,6 +497,7 @@ class GPUDynInst : public GPUExecContext
 
     // the time the request was started
     Tick accessTime = -1;
+    bool accessedHbm = false;
 
     // hold the tick when the instruction arrives at certain hop points
     // on it's way to main memory

@@ -539,6 +539,9 @@ class LSQUnit
          * is issued and its completion */
         statistics::Distribution loadToUse;
 
+        /** Load-to-use latency for demand loads that reached DRAM. */
+        statistics::Distribution hbmLoadToUse;
+
         /** Total number of loads and stores written to the load store queue */
         statistics::Scalar addedLoadsAndStores;
     } stats;

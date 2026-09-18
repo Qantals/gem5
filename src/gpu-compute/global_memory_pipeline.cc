@@ -161,6 +161,9 @@ GlobalMemPipeline::exec()
 
         if (m->isLoad() || m->isAtomic() || m->isMemSync()) {
             computeUnit.shader->sampleLoad(accessTime);
+            if (m->hasAccessedHbm()) {
+                computeUnit.shader->sampleHbmLoad(accessTime);
+            }
             computeUnit.shader->ScheduleAdd(&w->outstandingReqsRdGm,
                                              m->time, -1);
         }

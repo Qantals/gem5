@@ -874,7 +874,8 @@ machine(MachineType:CorePair, "CP-like Core Coherence")
                              machineIDToMachineType(in_msg.Sender),
                              in_msg.InitialRequestTime,
                              in_msg.ForwardRequestTime,
-                             in_msg.ProbeRequestStartTime);
+                             in_msg.ProbeRequestStartTime,
+                             in_msg.HBMRead);
     }
   }
 
@@ -891,7 +892,8 @@ machine(MachineType:CorePair, "CP-like Core Coherence")
                               machineIDToMachineType(in_msg.Sender),
                               in_msg.InitialRequestTime,
                               in_msg.ForwardRequestTime,
-                              in_msg.ProbeRequestStartTime);
+                              in_msg.ProbeRequestStartTime,
+                              in_msg.HBMRead);
     }
   }
 
@@ -908,7 +910,8 @@ machine(MachineType:CorePair, "CP-like Core Coherence")
                              machineIDToMachineType(in_msg.Sender),
                              in_msg.InitialRequestTime,
                              in_msg.ForwardRequestTime,
-                             in_msg.ProbeRequestStartTime);
+                             in_msg.ProbeRequestStartTime,
+                             in_msg.HBMRead);
     }
   }
 
@@ -925,7 +928,8 @@ machine(MachineType:CorePair, "CP-like Core Coherence")
                               machineIDToMachineType(in_msg.Sender),
                               in_msg.InitialRequestTime,
                               in_msg.ForwardRequestTime,
-                              in_msg.ProbeRequestStartTime);
+                              in_msg.ProbeRequestStartTime,
+                              in_msg.HBMRead);
     }
   }
 

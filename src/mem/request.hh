@@ -339,6 +339,8 @@ class Request : public Extensible<Request>
         CACHED                  = 0x00000400,
         READ_WRITE              = 0x00000800,
         SHARED                  = 0x00001000,
+        /** Response data was supplied by a completed DRAM read. */
+        HBM_RESPONSE            = 0x00002000,
 
     };
 
@@ -1097,6 +1099,10 @@ class Request : public Extensible<Request>
      */
     bool isGLCSet() const {return _cacheCoherenceFlags.isSet(GLC_BIT); }
     bool isSLCSet() const {return _cacheCoherenceFlags.isSet(SLC_BIT); }
+    bool isHbmResponse() const
+    { return _cacheCoherenceFlags.isSet(HBM_RESPONSE); }
+    void setHbmResponse()
+    { _cacheCoherenceFlags.set(HBM_RESPONSE); }
 
     /**
      * Accessor functions for the memory space configuration flags and used by

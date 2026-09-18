@@ -115,6 +115,7 @@ class Shader : public ClockedObject
 
     GPUDispatcher &dispatcher();
     void sampleLoad(const Tick accessTime);
+    void sampleHbmLoad(const Tick accessTime);
     void sampleStore(const Tick accessTime);
     void sampleInstRoundTrip(std::vector<Tick> roundTripTime);
     void sampleLineRoundTrip(const std::map<Addr,
@@ -355,6 +356,7 @@ class Shader : public ClockedObject
         // some stats for measuring latency
         statistics::Distribution allLatencyDist;
         statistics::Distribution loadLatencyDist;
+        statistics::Distribution hbmLoadLatencyDist;
         statistics::Distribution storeLatencyDist;
 
         // average ticks from vmem inst initiateAcc to coalescer issue,

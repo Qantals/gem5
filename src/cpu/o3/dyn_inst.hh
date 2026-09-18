@@ -1012,6 +1012,8 @@ class DynInst : public ExecContext, public RefCounted
     /* Values used by LoadToUse stat */
     Tick firstIssue = -1;
     Tick lastWakeDependents = -1;
+    /** At least one data response for this load came from a DRAM read. */
+    bool accessedHbm = false;
 
     /** Reads a misc. register, including any side-effects the read
      * might have as defined by the architecture.

@@ -107,6 +107,10 @@ LSQUnit::completeDataAccess(PacketPtr pkt)
     LSQRequest *request = dynamic_cast<LSQRequest *>(pkt->senderState);
     DynInstPtr inst = request->instruction();
 
+    if (pkt->req->isHbmResponse()) {
+        inst->accessedHbm = true;
+    }
+
     // hardware transactional memory
     // sanity check
     if (pkt->isHtmTransactional() && !inst->isSquashed()) {
@@ -271,11 +275,16 @@ LSQUnit::LSQUnitStats::LSQUnitStats(statistics::Group *parent)
                "being blocked"),
       ADD_STAT(loadToUse, "Distribution of cycle latency between the "
                 "first time a load is issued and its completion"),
+      ADD_STAT(hbmLoadToUse, "Distribution of cycle latency between the "
+                "first issue and completion of a load that reached DRAM"),
       ADD_STAT(addedLoadsAndStores, statistics::units::Count::get(),
                "Number of loads and stores written to the Load Store Queue")
 {
     loadToUse
         .init(0, 299, 10)
+        .flags(statistics::nozero);
+    hbmLoadToUse
+        .init(0, 9999, 10)
         .flags(statistics::nozero);
 }
 
@@ -739,8 +748,12 @@ LSQUnit::commitLoad()
     if (!inst->isInstPrefetch() && !inst->isDataPrefetch()
             && inst->firstIssue != -1
             && inst->lastWakeDependents != -1) {
-        stats.loadToUse.sample(cpu->ticksToCycles(
-                    inst->lastWakeDependents - inst->firstIssue));
+        const Cycles load_to_use = cpu->ticksToCycles(
+                    inst->lastWakeDependents - inst->firstIssue);
+        stats.loadToUse.sample(load_to_use);
+        if (inst->accessedHbm) {
+            stats.hbmLoadToUse.sample(load_to_use);
+        }
     }
 
     loadQueue.front().clear();

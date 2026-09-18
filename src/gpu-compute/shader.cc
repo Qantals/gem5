@@ -489,6 +489,12 @@ Shader::sampleLoad(const Tick accessTime)
 }
 
 void
+Shader::sampleHbmLoad(const Tick accessTime)
+{
+    stats.hbmLoadLatencyDist.sample(accessTime);
+}
+
+void
 Shader::sampleInstRoundTrip(std::vector<Tick> roundTripTime)
 {
     // Only sample instructions that go all the way to main memory
@@ -599,6 +605,8 @@ Shader::ShaderStats::ShaderStats(statistics::Group *parent, int wf_size)
     : statistics::Group(parent),
       ADD_STAT(allLatencyDist, "delay distribution for all"),
       ADD_STAT(loadLatencyDist, "delay distribution for loads"),
+      ADD_STAT(hbmLoadLatencyDist,
+               "delay distribution for loads that reached DRAM"),
       ADD_STAT(storeLatencyDist, "delay distribution for stores"),
       ADD_STAT(initToCoalesceLatency,
                "Ticks from vmem inst initiateAcc to coalescer issue"),
@@ -623,6 +631,10 @@ Shader::ShaderStats::ShaderStats(statistics::Group *parent, int wf_size)
 
     loadLatencyDist
         .init(0, 1600000-1, 10000)
+        .flags(statistics::pdf | statistics::oneline);
+
+    hbmLoadLatencyDist
+        .init(0, 20000000-1, 10000)
         .flags(statistics::pdf | statistics::oneline);
 
     storeLatencyDist

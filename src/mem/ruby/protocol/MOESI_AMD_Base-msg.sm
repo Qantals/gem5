@@ -243,6 +243,7 @@ structure(ResponseMsg, desc="...", interface="Message") {
   bool DemandRequest, default="false", desc="For profiling purposes";
 
   bool L3Hit, default="false", desc="Did memory or L3 supply the data?";
+  bool HBMRead, default="false", desc="Data came from a completed DRAM read";
   MachineID OriginalResponder, desc="Mach which wrote the data to the L3";
   MachineID CURequestor,             desc="Node who started the access";
 

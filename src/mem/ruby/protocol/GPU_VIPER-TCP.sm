@@ -570,10 +570,17 @@ machine(MachineType:TCP, "GPU TCP (L1 Data Cache)")
 
   action(l_loadDoneMiss, "ldm", desc="local load done (misses in TCP)") {
     assert(is_valid(cache_entry));
-    if (use_seq_not_coal) {
-      sequencer.readCallback(address, cache_entry.DataBlk, false, MachineType:L1Cache);
-    } else {
-      coalescer.readCallback(address, MachineType:L1Cache, cache_entry.DataBlk, false);
+    peek(responseToTCP_in, ResponseMsg) {
+      if (use_seq_not_coal) {
+        sequencer.readCallback(address, cache_entry.DataBlk, false,
+                               MachineType:L1Cache, intToCycles(0),
+                               intToCycles(0), intToCycles(0),
+                               in_msg.HBMRead);
+      } else {
+        coalescer.readCallback(address, MachineType:L1Cache,
+                               cache_entry.DataBlk, false,
+                               in_msg.HBMRead);
+      }
     }
   }
 
@@ -584,9 +591,12 @@ machine(MachineType:TCP, "GPU TCP (L1 Data Cache)")
     peek(responseToTCP_in, ResponseMsg) {
       DataBlock tmp:= in_msg.DataBlk;
       if (use_seq_not_coal) {
-        sequencer.readCallback(address, tmp, false, MachineType:L1Cache);
+        sequencer.readCallback(address, tmp, false, MachineType:L1Cache,
+                               intToCycles(0), intToCycles(0),
+                               intToCycles(0), in_msg.HBMRead);
       } else {
-        coalescer.readCallback(address, MachineType:L1Cache, tmp, false);
+        coalescer.readCallback(address, MachineType:L1Cache, tmp, false,
+                               in_msg.HBMRead);
       }
     }
   }

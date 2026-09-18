@@ -123,7 +123,8 @@ class Sequencer : public RubyPort
                       const MachineType mach = MachineType_NUM,
                       const Cycles initialRequestTime = Cycles(0),
                       const Cycles forwardRequestTime = Cycles(0),
-                      const Cycles firstResponseTime = Cycles(0));
+                      const Cycles firstResponseTime = Cycles(0),
+                      const bool hbmRead = false);
 
     void atomicCallback(Addr address,
                         DataBlock& data,

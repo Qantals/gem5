@@ -293,6 +293,11 @@ class GPUCoalescer : public RubyPort
                       MachineType mach,
                       DataBlock& data,
                       bool externalHit);
+    void readCallback(Addr address,
+                      MachineType mach,
+                      DataBlock& data,
+                      bool externalHit,
+                      bool hbmRead);
 
     void readCallback(Addr address,
                       MachineType mach,
@@ -309,7 +314,8 @@ class GPUCoalescer : public RubyPort
                       Cycles forwardRequestTime,
                       Cycles firstResponseTime,
                       bool isRegion,
-                      bool externalHit);
+                      bool externalHit,
+                      bool hbmRead = false);
 
     /* atomics need their own callback because the data
        might be const coming from SLICC */
@@ -399,7 +405,8 @@ class GPUCoalescer : public RubyPort
                      Cycles firstResponseTime,
                      bool isRegion,
                      bool externalHit,
-                     bool mshrHitUnderMiss);
+                     bool mshrHitUnderMiss,
+                     bool hbmRead = false);
 
     void recordStats(CoalescedRequest* crequest,
                            MachineType mach,
@@ -479,6 +486,8 @@ class GPUCoalescer : public RubyPort
         statistics::Scalar m_mshr_ld_misses;
 
         statistics::Scalar m_mshr_st_misses;
+
+        statistics::Distribution hbmLineLatency;
 
         statistics::Formula m_mshr_accesses;
     } stats;

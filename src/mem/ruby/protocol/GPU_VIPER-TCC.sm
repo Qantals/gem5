@@ -494,6 +494,7 @@ machine(MachineType:TCC, "TCC Cache")
         }
         out_msg.isGLCSet := in_msg.isGLCSet;
         out_msg.isSLCSet := in_msg.isSLCSet;
+        out_msg.HBMRead := in_msg.HBMRead;
         // reuse CURequestor field to allow multiple concurrent loads and
         // track where they should go back to (since TBE can't distinguish
         // destinations)
@@ -531,6 +532,7 @@ machine(MachineType:TCC, "TCC Cache")
           out_msg.State := CoherenceState:Shared;
           out_msg.isGLCSet := in_msg.isGLCSet;
           out_msg.isSLCSet := in_msg.isSLCSet;
+          out_msg.HBMRead := in_msg.HBMRead;
           DPRINTF(RubySlicc, "%s\n", out_msg);
         }
         enqueue(unblockToNB_out, UnblockMsg, 1) {

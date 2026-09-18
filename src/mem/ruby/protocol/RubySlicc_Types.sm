@@ -131,6 +131,8 @@ structure (Sequencer, external = "yes") {
   void readCallback(Addr, DataBlock, bool, MachineType);
   void readCallback(Addr, DataBlock, bool, MachineType,
                     Cycles, Cycles, Cycles);
+  void readCallback(Addr, DataBlock, bool, MachineType,
+                    Cycles, Cycles, Cycles, bool);
 
   void writeCallback(Addr, DataBlock);
   void writeCallback(Addr, DataBlock, bool);
