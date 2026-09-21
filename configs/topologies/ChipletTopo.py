@@ -41,6 +41,7 @@ class ChipletTopo(BaseTopology):
             fatal("--noi-link-latencies must contain five positive integers")
 
         noi_domain = getattr(options, "noi_clk_domain", None)
+        noi_link_domain = getattr(options, "noi_link_clk_domain", None)
         cpu_noc_domain = getattr(options, "cpu_noc_clk_domain", None)
         gpu_noc_domain = getattr(options, "gpu_noc_clk_domain", None)
         routers = [
@@ -57,16 +58,20 @@ class ChipletTopo(BaseTopology):
 
         int_links = []
 
-        def add_int_link(src, dst, latency, edge=False):
+        def add_int_link(src, dst, latency, edge=False, physical_domain=None):
             link = IntLink(
                 link_id=len(int_links),
                 src_node=routers[src],
                 dst_node=routers[dst],
                 latency=latency,
             )
-            if noi_domain:
-                link.network_link.clk_domain = noi_domain
-                link.credit_link.clk_domain = noi_domain
+            link_domain = physical_domain or noi_domain
+            if link_domain:
+                link.network_link.clk_domain = link_domain
+                link.credit_link.clk_domain = link_domain
+                if physical_domain:
+                    link.src_cdc = True
+                    link.dst_cdc = True
                 if edge:
                     if src >= 6:
                         link.src_cdc = True
@@ -75,8 +80,8 @@ class ChipletTopo(BaseTopology):
             int_links.append(link)
 
         for (src, dst), latency in zip(self.NOI_EDGES, latencies):
-            add_int_link(src, dst, latency)
-            add_int_link(dst, src, latency)
+            add_int_link(src, dst, latency, physical_domain=noi_link_domain)
+            add_int_link(dst, src, latency, physical_domain=noi_link_domain)
         for noi, noc in ((0, 6), (1, 7)):
             add_int_link(noi, noc, 1, edge=True)
             add_int_link(noc, noi, 1, edge=True)
