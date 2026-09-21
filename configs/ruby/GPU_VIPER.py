@@ -331,18 +331,26 @@ class TCCCntrl(GPU_VIPER_TCC_Controller, CntrlBase):
             self.recycle_latency = options.recycle_latency
 
 
+L3_TOTAL_ARRAY_BANKS = 16
+
+
 class L3Cache(RubyCache):
-    dataArrayBanks = 16
-    tagArrayBanks = 16
+    dataArrayBanks = L3_TOTAL_ARRAY_BANKS
+    tagArrayBanks = L3_TOTAL_ARRAY_BANKS
 
     def create(self, options, ruby_system, system):
+        if options.num_dirs <= 0:
+            m5.util.fatal("num_dirs must be positive for the GPU_VIPER L3")
+        if L3_TOTAL_ARRAY_BANKS % options.num_dirs:
+            m5.util.fatal(
+                "GPU_VIPER L3 array banks must divide evenly across directories"
+            )
         self.size = MemorySize(options.l3_size)
         self.size.value /= options.num_dirs
         self.assoc = options.l3_assoc
-        self.dataArrayBanks /= options.num_dirs
-        self.tagArrayBanks /= options.num_dirs
-        self.dataArrayBanks /= options.num_dirs
-        self.tagArrayBanks /= options.num_dirs
+        l3_banks_per_slice = L3_TOTAL_ARRAY_BANKS // options.num_dirs
+        self.dataArrayBanks = l3_banks_per_slice
+        self.tagArrayBanks = l3_banks_per_slice
         self.dataAccessLatency = options.l3_data_latency
         self.tagAccessLatency = options.l3_tag_latency
         self.resourceStalls = False
