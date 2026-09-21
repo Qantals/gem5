@@ -76,7 +76,8 @@ HSAPP_EVENT_DESCRIPTION_GENERATOR(QueueProcessEvent)
 HSAPacketProcessor::HSAPacketProcessor(const Params &p)
     : DmaVirtDevice(p), walker(p.walker),
       numHWQueues(p.numHWQueues), pioAddr(p.pioAddr),
-      pioSize(PAGE_SIZE), pioDelay(10), pktProcessDelay(p.pktProcessDelay)
+      pioSize(PAGE_SIZE), pioDelay(10), pktProcessDelay(p.pktProcessDelay),
+      stats(this)
 {
     DPRINTF(HSAPacketProcessor, "%s:\n", __FUNCTION__);
     hwSchdlr = new HWScheduler(this, p.wakeupDelay);
@@ -161,6 +162,7 @@ HSAPacketProcessor::write(Packet *pkt)
     DPRINTF(HSAPacketProcessor,
             "%s: write data 0x%x to offset %d (0x%x)\n",
             __FUNCTION__, doorbell_reg, daddr, daddr);
+    ++stats.doorbellsReceived;
     hwSchdlr->write(daddr, doorbell_reg);
     pkt->makeAtomicResponse();
     return pioDelay;
@@ -642,6 +644,13 @@ void
 HSAPacketProcessor::setDevice(GPUCommandProcessor *dev)
 {
     this->gpu_device = dev;
+}
+
+HSAPacketProcessor::HSAPacketProcessorStats::HSAPacketProcessorStats(
+    statistics::Group *parent)
+    : statistics::Group(parent),
+      ADD_STAT(doorbellsReceived, "HSA doorbell writes received by HSAPP")
+{
 }
 
 int

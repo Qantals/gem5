@@ -48,6 +48,7 @@
 
 #include "arch/amdgpu/vega/gpu_registers.hh"
 #include "base/logging.hh"
+#include "base/statistics.hh"
 #include "base/trace.hh"
 #include "base/types.hh"
 #include "debug/GPUCommandProc.hh"
@@ -180,6 +181,13 @@ class GPUCommandProcessor : public DmaVirtDevice
 
     // Keep track of start times for task dispatches.
     std::unordered_map<Addr, Tick> dispatchStartTime;
+
+    struct GPUCommandProcessorStats : public statistics::Group
+    {
+        GPUCommandProcessorStats(statistics::Group *parent);
+
+        statistics::Scalar wakeupNotificationsIssued;
+    } stats;
 
     /**
      * Perform a DMA read of the read_dispatch_id_field_base_byte_offset

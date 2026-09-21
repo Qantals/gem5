@@ -60,7 +60,7 @@ namespace gem5
 GPUCommandProcessor::GPUCommandProcessor(const Params &p)
     : DmaVirtDevice(p), dispatcher(*p.dispatcher), _driver(nullptr),
       walker(p.walker), hsaPP(p.hsapp),
-      target_non_blit_kernel_id(p.target_non_blit_kernel_id)
+      target_non_blit_kernel_id(p.target_non_blit_kernel_id), stats(this)
 {
     assert(hsaPP);
     hsaPP->setDevice(this);
@@ -572,19 +572,34 @@ GPUCommandProcessor::updateHsaSignal(Addr signal_handle, uint64_t signal_value,
     Addr event_addr = getHsaSignalEventAddr(signal_handle);
     DPRINTF(GPUCommandProc, "Triggering completion signal: %x!\n", value_addr);
 
-    auto cb = new DmaVirtCallback<uint64_t>(function, signal_value);
+    auto completion_callback = [this, mailbox_addr, event_addr,
+                                function](const uint64_t &dma_buffer) {
+        if (!FullSystem) {
+            auto tc = system()->threads[0];
+            ConstVPtr<uint64_t> mailbox_ptr(mailbox_addr, tc);
+            if (*mailbox_ptr != 0) {
+                ConstVPtr<uint32_t> event_val(event_addr, tc);
+                ++stats.wakeupNotificationsIssued;
+                signalWakeupEvent(*event_val);
+            }
+        }
+        function(dma_buffer);
+    };
+    auto cb = new DmaVirtCallback<uint64_t>(completion_callback, signal_value);
 
     dmaWriteVirt(value_addr, sizeof(Addr), cb, &cb->dmaBuffer, 0);
-
-    auto tc = system()->threads[0];
-    ConstVPtr<uint64_t> mailbox_ptr(mailbox_addr, tc);
 
     // Notifying an event with its mailbox pointer is
     // not supported in the current implementation. Just use
     // mailbox pointer to distinguish between interruptible
     // and default signal. Interruptible signal will have
     // a valid mailbox pointer.
-    if (*mailbox_ptr != 0) {
+    if (FullSystem) {
+        auto tc = system()->threads[0];
+        ConstVPtr<uint64_t> mailbox_ptr(mailbox_addr, tc);
+        if (*mailbox_ptr == 0)
+            return;
+
         // This is an interruptible signal. Now, read the
         // event ID and directly communicate with the driver
         // about that event notification.
@@ -597,13 +612,17 @@ GPUCommandProcessor::updateHsaSignal(Addr signal_handle, uint64_t signal_value,
         // the event value. This is not available in full system mode so
         // instead we need to issue a DMA write to the address. The value of
         // *event_val clears the event.
-        if (FullSystem) {
-            auto cb = new DmaVirtCallback<uint64_t>(function, *event_val);
-            dmaWriteVirt(mailbox_addr, sizeof(Addr), cb, &cb->dmaBuffer, 0);
-        } else {
-            signalWakeupEvent(*event_val);
-        }
+        auto cb = new DmaVirtCallback<uint64_t>(function, *event_val);
+        dmaWriteVirt(mailbox_addr, sizeof(Addr), cb, &cb->dmaBuffer, 0);
     }
+}
+
+GPUCommandProcessor::GPUCommandProcessorStats::GPUCommandProcessorStats(
+    statistics::Group *parent)
+    : statistics::Group(parent),
+      ADD_STAT(wakeupNotificationsIssued,
+               "SE driver wakeup notifications issued")
+{
 }
 
 void

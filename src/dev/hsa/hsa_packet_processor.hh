@@ -36,6 +36,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "base/statistics.hh"
 #include "base/types.hh"
 #include "debug/HSAPacketProcessor.hh"
 #include "dev/dma_virt_device.hh"
@@ -391,6 +392,14 @@ class HSAPacketProcessor: public DmaVirtDevice
             uint32_t ix_start, unsigned num_pkts,
             dma_series_ctx *series_ctx, void *dest_4debug);
     void handleReadDMA();
+
+  private:
+    struct HSAPacketProcessorStats : public statistics::Group
+    {
+        HSAPacketProcessorStats(statistics::Group *parent);
+
+        statistics::Scalar doorbellsReceived;
+    } stats;
 };
 
 } // namespace gem5
