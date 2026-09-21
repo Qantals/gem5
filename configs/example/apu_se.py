@@ -449,11 +449,6 @@ parser.add_argument(
     help="Independent NoI clock (for example 1GHz); omit for Ruby clock",
 )
 parser.add_argument(
-    "--noi-link-clock",
-    default=None,
-    help="Optional physical NoI link clock; NoI routers keep --noi-clock",
-)
-parser.add_argument(
     "--noi-link-latencies",
     default="1,1,1,1,1",
     help="CPU-GPU, CPU-M0, CPU-M1, GPU-M2, GPU-M3 link cycles",
@@ -929,8 +924,6 @@ system.piobus = IOXBar(
 dma_list = [gpu_hsapp, gpu_cmd_proc]
 if args.noi_clock and not args.chiplet_topo:
     fatal("--noi-clock requires --chiplet-topo")
-if args.noi_link_clock and (not args.chiplet_topo or not args.noi_clock):
-    fatal("--noi-link-clock requires --chiplet-topo and --noi-clock")
 if args.chiplet_noc_clock_domains and (
     not args.chiplet_topo or not args.noi_clock
 ):
@@ -943,12 +936,6 @@ if args.chiplet_topo and args.noi_clock:
         voltage_domain=VoltageDomain(voltage="0.9V"),
     )
     args.noi_clk_domain = system.noi_clk_domain
-if args.noi_link_clock:
-    system.noi_link_clk_domain = SrcClockDomain(
-        clock=args.noi_link_clock,
-        voltage_domain=VoltageDomain(voltage="0.9V"),
-    )
-    args.noi_link_clk_domain = system.noi_link_clk_domain
 if args.chiplet_noc_clock_domains:
     args.cpu_noc_clk_domain = cpu_list[0].clk_domain
     args.gpu_noc_clk_domain = shader.clk_domain
