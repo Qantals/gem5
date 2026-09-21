@@ -46,7 +46,7 @@
 #include "sim/eventq.hh"
 
 #define AQL_PACKET_SIZE 64
-#define PAGE_SIZE 4096
+#define PAGE_SIZE 65536
 #define NUM_DMA_BUFS 16
 #define DMA_BUF_SIZE (AQL_PACKET_SIZE * NUM_DMA_BUFS)
 // HSA runtime supports only 5 signals per barrier packet
