@@ -48,6 +48,7 @@ from .Ruby import (
 addToPath("../")
 
 from topologies.Cluster import Cluster
+from topologies.ChipletTopo import ChipletTopo
 from topologies.Crossbar import Crossbar
 
 
@@ -965,6 +966,13 @@ def create_system(
     cpuCluster = None
     gpuCluster = None
 
+    if options.chiplet_topo:
+        if options.network != "garnet" or options.num_dirs != 4:
+            m5.util.fatal("ChipletTopo requires Garnet and exactly four directories")
+        mainChipletTopo = ChipletTopo(options)
+    else:
+        mainChipletTopo = None
+
     if hasattr(options, "bw_scalor") and options.bw_scalor > 0:
         # Assuming a 2GHz clock
         crossbar_bw = 16 * options.num_compute_units * options.bw_scalor
@@ -982,6 +990,8 @@ def create_system(
     )
     for dir_cntrl in dir_cntrl_nodes:
         mainCluster.add(dir_cntrl)
+        if mainChipletTopo:
+            mainChipletTopo.add_directory(dir_cntrl)
 
     # Create CPU core pairs
     (cp_sequencers, cp_cntrl_nodes) = construct_corepairs(
@@ -990,6 +1000,8 @@ def create_system(
     cpu_sequencers.extend(cp_sequencers)
     for cp_cntrl in cp_cntrl_nodes:
         cpuCluster.add(cp_cntrl)
+        if mainChipletTopo:
+            mainChipletTopo.add_cpu(cp_cntrl)
 
     # Register CPUs and caches for each CorePair and directory (SE mode only)
     if not full_system:
@@ -1061,6 +1073,8 @@ def create_system(
     cpu_sequencers.extend(tcp_sequencers)
     for tcp_cntrl in tcp_cntrl_nodes:
         gpuCluster.add(tcp_cntrl)
+        if mainChipletTopo:
+            mainChipletTopo.add_gpu(tcp_cntrl)
 
     # Create SQCs
     (sqc_sequencers, sqc_cntrl_nodes) = construct_sqcs(
@@ -1069,6 +1083,8 @@ def create_system(
     cpu_sequencers.extend(sqc_sequencers)
     for sqc_cntrl in sqc_cntrl_nodes:
         gpuCluster.add(sqc_cntrl)
+        if mainChipletTopo:
+            mainChipletTopo.add_gpu(sqc_cntrl)
 
     # Create Scalars
     (scalar_sequencers, scalar_cntrl_nodes) = construct_scalars(
@@ -1077,6 +1093,8 @@ def create_system(
     cpu_sequencers.extend(scalar_sequencers)
     for scalar_cntrl in scalar_cntrl_nodes:
         gpuCluster.add(scalar_cntrl)
+        if mainChipletTopo:
+            mainChipletTopo.add_gpu(scalar_cntrl)
 
     # Create command processors
     (cmdproc_sequencers, cmdproc_cntrl_nodes) = construct_cmdprocs(
@@ -1085,6 +1103,8 @@ def create_system(
     cpu_sequencers.extend(cmdproc_sequencers)
     for cmdproc_cntrl in cmdproc_cntrl_nodes:
         gpuCluster.add(cmdproc_cntrl)
+        if mainChipletTopo:
+            mainChipletTopo.add_gpu(cmdproc_cntrl)
 
     # Create TCCs
     tcc_cntrl_nodes = construct_tccs(
@@ -1092,6 +1112,8 @@ def create_system(
     )
     for tcc_cntrl in tcc_cntrl_nodes:
         gpuCluster.add(tcc_cntrl)
+        if mainChipletTopo:
+            mainChipletTopo.add_gpu(tcc_cntrl)
 
     for i, dma_device in enumerate(dma_devices):
         dma_seq = DMASequencer(version=i, ruby_system=ruby_system)
@@ -1120,6 +1142,8 @@ def create_system(
         dma_cntrl.responseFromDir.in_port = ruby_system.network.out_port
         dma_cntrl.mandatoryQueue = MessageBuffer(buffer_size=0)
         gpuCluster.add(dma_cntrl)
+        if mainChipletTopo:
+            mainChipletTopo.add_gpu(dma_cntrl)
 
     # Add cpu/gpu clusters to main cluster
     mainCluster.add(cpuCluster)
@@ -1127,4 +1151,8 @@ def create_system(
 
     ruby_system.network.number_of_virtual_networks = 11
 
-    return (cpu_sequencers, dir_cntrl_nodes, mainCluster)
+    return (
+        cpu_sequencers,
+        dir_cntrl_nodes,
+        mainChipletTopo if mainChipletTopo else mainCluster,
+    )

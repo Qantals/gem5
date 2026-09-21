@@ -142,6 +142,10 @@ def setup_memory_controllers(system, ruby, dir_cntrls, options):
 
     ruby.memory_size_bits = 48
 
+    if getattr(options, "full_hbm_stacks", False):
+        _setup_hbm2_stacks(system, ruby, dir_cntrls, options)
+        return
+
     index = 0
     mem_ctrls = []
     crossbars = []
@@ -205,6 +209,79 @@ def setup_memory_controllers(system, ruby, dir_cntrls, options):
 
     if len(crossbars) > 0:
         ruby.crossbars = crossbars
+
+
+def _setup_hbm2_stacks(system, ruby, dir_cntrls, options):
+    stack_count = 4
+    controllers_per_stack = 8
+    stack_size = 4 * 1024**3
+    total_size = stack_count * stack_size
+
+    if options.num_dirs != stack_count or len(dir_cntrls) != stack_count:
+        fatal("--full-hbm-stacks requires exactly four directories")
+    if not getattr(options, "chiplet_topo", False):
+        fatal("--full-hbm-stacks requires --chiplet-topo")
+    if options.cacheline_size != 64:
+        fatal("--full-hbm-stacks requires a 64-byte cache line")
+    if options.xor_low_bit != 0:
+        fatal("--full-hbm-stacks requires --xor-low-bit=0")
+    if len(system.mem_ranges) != 1:
+        fatal("--full-hbm-stacks requires one 16GiB system memory range")
+
+    system_range = system.mem_ranges[0]
+    if int(system_range.start) != 0 or int(system_range.size()) != total_size:
+        fatal("--full-hbm-stacks requires --mem-size=16GiB")
+
+    # Address bits 6-9 select one of the 16 pseudo channels in a stack.
+    # Bits 10-11 select one of the four stacks and its Ruby directory.
+    pseudo_channel_masks = [1 << bit for bit in range(6, 12)]
+    stack_masks = [1 << bit for bit in range(10, 12)]
+    mem_ctrls = []
+    address_xbar = IOXBar(
+        width=256,
+        frontend_latency=0,
+        forward_latency=0,
+        response_latency=0,
+        clk_domain=system.clk_domain,
+    )
+
+    for stack_index, dir_cntrl in enumerate(dir_cntrls):
+        dir_cntrl.memory_out_port = address_xbar.cpu_side_ports
+        dir_cntrl.addr_ranges = [
+            AddrRange(
+                system_range.start,
+                size=system_range.size(),
+                masks=stack_masks,
+                intlvMatch=stack_index,
+            )
+        ]
+
+        for channel_index in range(controllers_per_stack):
+            match_base = (stack_index << 4) | (channel_index << 1)
+            pseudo_channels = []
+            for pseudo_index in range(2):
+                dram = HBM_2000_4H_1x64()
+                dram.range = AddrRange(
+                    system_range.start,
+                    size=system_range.size(),
+                    masks=pseudo_channel_masks,
+                    intlvMatch=match_base | pseudo_index,
+                )
+                dram.enable_dram_powerdown = options.enable_dram_powerdown
+                if options.access_backing_store:
+                    dram.kvm_map = False
+                pseudo_channels.append(dram)
+
+            mem_ctrl = HBMCtrl(
+                dram=pseudo_channels[0],
+                dram_2=pseudo_channels[1],
+                disable_sanity_check=True,
+            )
+            mem_ctrl.port = address_xbar.mem_side_ports
+            mem_ctrls.append(mem_ctrl)
+
+    system.mem_ctrls = mem_ctrls
+    ruby.hbm_address_xbar = address_xbar
 
 
 def create_topology(controllers, options):

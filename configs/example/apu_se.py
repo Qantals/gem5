@@ -438,6 +438,38 @@ parser.add_argument(
     help="Download resources to this directory",
 )
 
+parser.add_argument(
+    "--chiplet-topo",
+    action="store_true",
+    help="Use the CPU-GPU-four-memory-chiplet Garnet topology",
+)
+parser.add_argument(
+    "--noi-clock",
+    default=None,
+    help="Independent NoI clock (for example 1GHz); omit for Ruby clock",
+)
+parser.add_argument(
+    "--noi-link-latencies",
+    default="1,1,1,1,1",
+    help="CPU-GPU, CPU-M0, CPU-M1, GPU-M2, GPU-M3 link cycles",
+)
+parser.add_argument(
+    "--chiplet-noc-link-latency",
+    type=int,
+    default=1,
+    help="CPU/GPU controller-to-NoC-router link latency in local cycles",
+)
+parser.add_argument(
+    "--chiplet-noc-clock-domains",
+    action="store_true",
+    help="Clock the CPU and GPU NoC at the CPU and GPU frequencies",
+)
+parser.add_argument(
+    "--full-hbm-stacks",
+    action="store_true",
+    help="Use four 4GiB HBM2 stacks with 16 pseudo channels each",
+)
+
 Ruby.define_options(parser)
 
 # add TLB options to the parser
@@ -890,10 +922,35 @@ system.piobus = IOXBar(
     width=32, response_latency=0, frontend_latency=0, forward_latency=0
 )
 dma_list = [gpu_hsapp, gpu_cmd_proc]
+if args.noi_clock and not args.chiplet_topo:
+    fatal("--noi-clock requires --chiplet-topo")
+if args.chiplet_noc_clock_domains and (
+    not args.chiplet_topo or not args.noi_clock
+):
+    fatal("--chiplet-noc-clock-domains requires --chiplet-topo and --noi-clock")
+if args.chiplet_noc_link_latency < 1:
+    fatal("--chiplet-noc-link-latency must be positive")
+if args.chiplet_topo and args.noi_clock:
+    system.noi_clk_domain = SrcClockDomain(
+        clock=args.noi_clock,
+        voltage_domain=VoltageDomain(voltage="0.9V"),
+    )
+    args.noi_clk_domain = system.noi_clk_domain
+if args.chiplet_noc_clock_domains:
+    args.cpu_noc_clk_domain = cpu_list[0].clk_domain
+    args.gpu_noc_clk_domain = shader.clk_domain
 Ruby.create_system(args, None, system, None, dma_list, None)
 system.ruby.clk_domain = SrcClockDomain(
     clock=args.ruby_clock, voltage_domain=system.voltage_domain
 )
+if args.chiplet_topo and args.noi_clock:
+    for netif in system.ruby.network.netifs[:4]:
+        netif.clk_domain = system.noi_clk_domain
+if args.chiplet_noc_clock_domains:
+    for netif in system.ruby.network.netifs[4:6]:
+        netif.clk_domain = args.cpu_noc_clk_domain
+    for netif in system.ruby.network.netifs[6:]:
+        netif.clk_domain = args.gpu_noc_clk_domain
 gpu_cmd_proc.pio = system.piobus.mem_side_ports
 gpu_hsapp.pio = system.piobus.mem_side_ports
 
