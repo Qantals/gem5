@@ -350,7 +350,9 @@ class Shader : public ClockedObject
   protected:
     struct ShaderStats : public statistics::Group
     {
-        ShaderStats(statistics::Group *parent, int wf_size);
+        ShaderStats(Shader *shader, int wf_size);
+
+        void preDumpStats() override;
 
         // some stats for measuring latency
         statistics::Distribution allLatencyDist;
@@ -379,6 +381,9 @@ class Shader : public ClockedObject
         statistics::Scalar shaderActiveTicks;
         statistics::Vector vectorInstSrcOperand;
         statistics::Vector vectorInstDstOperand;
+
+      private:
+        Shader &_shader;
     } stats;
 };
 

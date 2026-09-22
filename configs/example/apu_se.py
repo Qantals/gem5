@@ -84,6 +84,12 @@ parser.add_argument(
 parser.add_argument(
     "--benchmark-root", help="Root of benchmark directory tree"
 )
+parser.add_argument(
+    "--stat-period-us",
+    type=float,
+    default=0.0,
+    help="Fixed stats dump/reset period in microseconds; 0 disables it",
+)
 
 # not super important now, but to avoid putting the number 4 everywhere, make
 # it an option/knob
@@ -477,6 +483,10 @@ GPUTLBOptions.tlb_options(parser)
 
 args = parser.parse_args()
 
+if args.stat_period_us < 0.0:
+    parser.error("--stat-period-us must be nonnegative")
+periodic_stats = args.stat_period_us > 0.0
+
 # Get the resource if specified.
 if args.download_resource:
     resources = obtain_resource(
@@ -788,7 +798,7 @@ render_driver = GPURenderDriver(filename=f"dri/renderD{renderDriNum}")
 gpu_hsapp = HSAPacketProcessor(
     pioAddr=hsapp_gpu_map_paddr, numHWQueues=args.num_hw_queues
 )
-dispatcher = GPUDispatcher(kernel_exit_events=True)
+dispatcher = GPUDispatcher(kernel_exit_events=not periodic_stats)
 gpu_cmd_proc = GPUCommandProcessor(hsapp=gpu_hsapp, dispatcher=dispatcher)
 gpu_driver.device = gpu_cmd_proc
 shader.dispatcher = dispatcher
@@ -1108,6 +1118,11 @@ if args.checkpoint_dir != None or args.checkpoint_restore != None:
 checkpoint_dir = None
 m5.instantiate(checkpoint_dir)
 
+if periodic_stats:
+    stat_period_s = args.stat_period_us * 1.0e-6
+    print(f"Periodic stats dump/reset every {args.stat_period_us:g} us")
+    m5.stats.periodicStatDump(m5.ticks.fromSeconds(stat_period_s))
+
 # Map workload to this address space
 host_cpu.workload[0].map(0x10000000, 0x200000000, 4096)
 
@@ -1139,13 +1154,19 @@ while True:
         m5.stats.dump()
         m5.stats.reset()
     elif "workbegin" in exit_event.getCause():
-        print("m5 work begin dump and reset")
-        m5.stats.dump()
-        m5.stats.reset()
+        if periodic_stats:
+            print("m5 work begin: periodic stats remain active")
+        else:
+            print("m5 work begin dump and reset")
+            m5.stats.dump()
+            m5.stats.reset()
     elif "workend" in exit_event.getCause():
-        print("m5 work end dump and reset")
-        m5.stats.dump()
-        m5.stats.reset()
+        if periodic_stats:
+            print("m5 work end: periodic stats remain active")
+        else:
+            print("m5 work end dump and reset")
+            m5.stats.dump()
+            m5.stats.reset()
     else:
         print(f"Unknown exit event: {exit_event.getCause()}. Continuing...")
 

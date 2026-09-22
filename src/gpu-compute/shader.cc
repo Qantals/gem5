@@ -595,8 +595,8 @@ Shader::getGfxVersion() const
     return gpuCmdProc.getGfxVersion();
 }
 
-Shader::ShaderStats::ShaderStats(statistics::Group *parent, int wf_size)
-    : statistics::Group(parent),
+Shader::ShaderStats::ShaderStats(Shader *shader, int wf_size)
+    : statistics::Group(shader),
       ADD_STAT(allLatencyDist, "delay distribution for all"),
       ADD_STAT(loadLatencyDist, "delay distribution for loads"),
       ADD_STAT(storeLatencyDist, "delay distribution for stores"),
@@ -615,7 +615,8 @@ Shader::ShaderStats::ShaderStats(statistics::Group *parent, int wf_size)
       ADD_STAT(vectorInstSrcOperand,
                "vector instruction source operand distribution"),
       ADD_STAT(vectorInstDstOperand,
-               "vector instruction destination operand distribution")
+               "vector instruction destination operand distribution"),
+      _shader(*shader)
 {
     allLatencyDist
         .init(0, 1600000-1, 10000)
@@ -656,12 +657,23 @@ Shader::ShaderStats::ShaderStats(statistics::Group *parent, int wf_size)
     for (int idx = 0; idx < wf_size; ++idx) {
         std::stringstream namestr;
         ccprintf(namestr, "%s.cacheBlockRoundTrip%d",
-                 static_cast<Shader*>(parent)->name(), idx);
+                 _shader.name(), idx);
         cacheBlockRoundTrip[idx]
             .init(0, 1600000-1, 10000)
             .name(namestr.str())
             .desc("Coalsr-to-coalsr time for the Nth cache block in an inst")
             .flags(statistics::pdf | statistics::oneline);
+    }
+}
+
+void
+Shader::ShaderStats::preDumpStats()
+{
+    statistics::Group::preDumpStats();
+
+    if (_shader._activeCus) {
+        shaderActiveTicks += curTick() - _shader._lastInactiveTick;
+        _shader._lastInactiveTick = curTick();
     }
 }
 
